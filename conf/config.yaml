@@ -1,0 +1,140 @@
+key: debag
+experiment_name: debag
+
+## -------datasets (HeteroGraph)----
+HeteroGraph: &HeteroGraph
+ seeds: 42
+ gpu: 0
+ cpu: False
+ root: ../data/
+
+# -------datasets (HGB)-------------
+DBLP: &DBLP
+  <<: *HeteroGraph
+  dataset: DBLP
+  nclass: 4
+  tgt_type: A
+
+ACM: &ACM
+  <<: *HeteroGraph
+  dataset: ACM
+  nclass: 3
+  tgt_type: P
+  ACM_keep_F: False
+
+IMDB: &IMDB
+  <<: *HeteroGraph
+  dataset: IMDB
+  nclass: 5
+  tgt_type: M
+  
+Freebase: &Freebase
+  <<: *HeteroGraph
+  dataset: Freebase
+  nclass: 7
+  tgt_type: B
+
+# -------model instance------------
+SeHGNN: &SeHGNN
+  embed_size: 256
+  label_feats: False
+  num_label_hops: 2
+  n_fp_layers: 2
+  n_task_layers: 3
+  hidden: 512
+  dropout: 0.5
+  input_drop: 0.1
+  att_drop: 0.
+  act: none # ['none', 'relu', 'leaky_relu', 'sigmoid']
+  residual: False
+  amp: False
+  lr: 0.001
+  weight_decay: 0
+  batch_size: 10000
+  patience: 50
+  num_heads: 1
+  neighbor_aggr_mode: use_submetapath_for_semantic_fusion
+  submetapath_feature_weight: 0.5
+  epochs: 50
+  num_hop: 3
+  run: 10
+
+# -------model instance + dataset-------
+SeHGNN_DBLP: &SeHGNN_DBLP
+  <<: [*DBLP,*SeHGNN]
+  model: SeHGNN
+  path: DBLP_checkpoint.pt
+
+
+SeHGNN_ACM: &SeHGNN_ACM
+  <<: [*ACM,*SeHGNN]
+  model: SeHGNN
+  path: ACM_checkpoint.pt
+
+SeHGNN_IMDB: &SeHGNN_IMDB
+  <<: [*IMDB,*SeHGNN] 
+  model: SeHGNN
+  path: IMDB_checkpoint.pt
+
+SeHGNN_Freebase: &SeHGNN_Freebase
+  <<: [*Freebase,*SeHGNN]
+  lr: 0.0003
+  weight_decay: 0.0001
+  model: SeHGNN
+  path: Freebase_checkpoint.pt
+  
+# -------model instance (exist study)-------
+
+
+# -------model instance (our study)-------
+#SeHGNN
+SeHGNNver2_DBLP: &SeHGNNver2_DBLP
+  <<: [*DBLP,*SeHGNN]
+  model: SeHGNNver2
+  sampling_limit: 10
+  path: DBLP_checkpoint.pt
+
+SeHGNNver2_ACM: &SeHGNNver2_ACM
+  <<: [*ACM,*SeHGNN]
+  model: SeHGNNver2
+  sampling_limit: 8
+  path: ACM_checkpoint.pt
+
+SeHGNNver2_IMDB: &SeHGNNver2_IMDB
+  <<: [*IMDB,*SeHGNN] 
+  model: SeHGNNver2
+  sampling_limit: 5
+  path: IMDB_checkpoint.pt
+
+SeHGNNver2_Freebase: &SeHGNNver2_Freebase
+  <<: [*Freebase,*SeHGNN]
+  model: SeHGNNver2
+  lr: 0.0003
+  weight_decay: 0.0001
+  path: Freebase_checkpoint.pt
+
+
+#debag
+debag:
+ <<: *SeHGNN_DBLP
+ neighbor_aggr_mode: all
+ model_name: SeHGNNver2
+ submetapath_feature_weight: 0.3
+ label_feats: False
+ act: relu
+ run: 1
+ ACM_keep_F: False
+ num_label_hops: 2
+ num_hop: 2
+
+
+defaults:
+  - override hydra/sweeper: optuna # [basic, optuna]
+
+hydra:
+  sweeper:
+    sampler:
+      _target_: optuna.samplers.TPESampler
+    direction: maximize
+    n_jobs: 1
+    n_trials: 50
