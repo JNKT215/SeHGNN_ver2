@@ -81,10 +81,8 @@ class PreProcessing(nn.Module):
     def get_etype_graph_dict(self,data):
         etype_graph_dict = {}
         for e_type_index,e_type in data.edge_type.items():
-            # src,dst = e_type[0],e_type[1]
-            src_index,dst_index =  data.node_dict[e_type[0]],data.node_dict[e_type[1]]
-            src_node_type_index,dst_node_type_index = [i for i in range(data.node_slices[src_index][0],data.node_slices[src_index][1])],[i for i in range(data.node_slices[dst_index][0],data.node_slices[dst_index][1])]
-            # src_node_type_index,dst_node_type_index = [i for i in range(data.node_slices[src][0],data.node_slices[src][1])],[i for i in range(data.node_slices[dst][0],data.node_slices[dst][1])]
+            src,dst = e_type[0],e_type[1]
+            src_node_type_index,dst_node_type_index = [i for i in range(data.node_slices[src][0],data.node_slices[src][1])],[i for i in range(data.node_slices[dst][0],data.node_slices[dst][1])]
         
             # e_type_edge_index = data.heterograph[e_type]['edge_index']
             e_type_edge_index = torch.stack([data.adjs[e_type].storage.row(),data.adjs[e_type].storage.col()])
@@ -112,7 +110,7 @@ class PreProcessing(nn.Module):
         index = 0
         for node_type,node_type_index in tqdm(data.node_dict.items()):
             cnt = 0
-            for _ in  range(data.node_slices[node_type_index][0],data.node_slices[node_type_index][1]):
+            for _ in  range(data.node_slices[node_type][0],data.node_slices[node_type][1]):
                 homo_to_hetero_index_dict[index] = cnt
                 cnt+=1
                 index+=1
@@ -857,7 +855,7 @@ class SeHGNNver2(nn.Module):
         self.residual = cfg["residual"]
 
         self.input_drop = nn.Dropout(cfg["input_drop"])
-        self.submetapath_aggr = SubMetapathAggr(cfg=self.cfg,node_slices=data.node_slices,neighbor_aggr_feature_per_metapath=data.neighbor_aggr_feature_per_metapath,x=data.x,hetero_g=data.heterograph_dgl,ntype_feature=data.ntype_features,metapath_name=mp.enum_metapath_name(name_dict=data.edge_type,type_dict=data.next_type,length=int(self.cfg['submetapath_hops'])+1))
+        self.submetapath_aggr = SubMetapathAggr(cfg=self.cfg,node_slices=data.node_slices,neighbor_aggr_feature_per_metapath=data.neighbor_aggr_feature_per_metapath,hetero_g=data.g,ntype_feature=data.ntype_features,metapath_name=mp.enum_metapath_name(name_dict=data.edge_type,type_dict=data.next_type,length=int(self.cfg['submetapath_hops'])+1))
 
         self.data_size = data.data_size
         self.embeding = nn.ParameterDict({})

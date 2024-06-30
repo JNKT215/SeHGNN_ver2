@@ -381,7 +381,8 @@ class HeteroDataSet():
         self.extra_metapath = [ele for ele in self.extra_metapath if len(ele) > self.cfg['num_hops'] + 1]        
         
         if self.cfg['model'] == "SeHGNNver2":
-            self.node_slices = {n_type_index:(self.dl.nodes['shift'][n_type_index], self.dl.nodes['shift'][n_type_index] + self.dl.nodes['count'][n_type_index]  ) for n_type_index in range(len(self.node_dict))}
+            self.swap_node_dict = {v: k for k, v in self.node_dict.items()}
+            self.node_slices = {self.swap_node_dict[n_type_index]:(self.dl.nodes['shift'][n_type_index], self.dl.nodes['shift'][n_type_index] + self.dl.nodes['count'][n_type_index]  ) for n_type_index in range(len(self.node_dict))}
             self.ntype_features = {ntype:self.g.ndata[ntype][ntype].clone() for ntype in self.node_dict}
             if self.cfg['dataset'] == "ACM":
                 self.total_nodes = self.dl.nodes['total'] - self.dl.nodes['count'][3]
