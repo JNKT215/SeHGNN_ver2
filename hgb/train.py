@@ -14,6 +14,7 @@ import os,sys
 from datetime import datetime
 sys.path.append('./data')
 from data_loader import HeteroDataSet
+
 def evaluator(gt, pred):
     gt = gt.cpu().squeeze()
     pred = pred.cpu().squeeze()
@@ -251,8 +252,8 @@ def main(cfg):
     
     artifacts,test_accs_micro,test_accs_macro = {},[],[]
     for i in tqdm(range(cfg['run'])):
-        print('Restart with seed =', i)
-        set_random_seed(seed=i)
+        print('Restart with seed =', i+1)
+        set_random_seed(seed=i+1)
         set_checkpt_folder(cfg)
         data.get_training_setup()
         # clone raw_feats to avoid in-place modification for different seeds
