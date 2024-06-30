@@ -854,7 +854,7 @@ class SeHGNNver2(nn.Module):
         self.residual = cfg["residual"]
 
         self.input_drop = nn.Dropout(cfg["input_drop"])
-        self.submetapath_aggr = SubMetapathAggr(cfg=self.cfg,node_slices=data.node_slices,neighbor_aggr_feature_per_metapath=data.neighbor_aggr_feature_per_metapath,x=data.x,hetero_g=data.heterograph_dgl,ntype_feature=data.ntype_features,metapath_name=data.metapath_name)
+        self.submetapath_aggr = SubMetapathAggr(cfg=self.cfg,node_slices=data.node_slices,neighbor_aggr_feature_per_metapath=data.neighbor_aggr_feature_per_metapath,x=data.x,hetero_g=data.heterograph_dgl,ntype_feature=data.ntype_features,metapath_name=mp.enum_metapath_name(name_dict=data.edge_type,type_dict=data.next_type,length=int(self.cfg['submetapath_hops'])+1))
 
         self.data_size = data.data_size
         self.embeding = nn.ParameterDict({})
