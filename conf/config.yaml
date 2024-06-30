@@ -3,7 +3,7 @@ experiment_name: debag
 
 ## -------datasets (HeteroGraph)----
 HeteroGraph: &HeteroGraph
- seeds: 42
+ seeds: 1
  gpu: 0
  cpu: False
  root: ../data/
@@ -56,7 +56,7 @@ SeHGNN: &SeHGNN
   neighbor_aggr_mode: use_submetapath_for_semantic_fusion
   submetapath_feature_weight: 0.5
   epochs: 50
-  num_hop: 3
+  num_hop: 2
   run: 10
 
 # -------model instance + dataset-------
@@ -84,7 +84,81 @@ SeHGNN_Freebase: &SeHGNN_Freebase
   path: Freebase_checkpoint.pt
   
 # -------model instance (exist study)-------
+SeHGNN_DBLP_tuned: &SeHGNN_DBLP_tuned
+  <<: [*DBLP,*SeHGNN]
+  model: SeHGNN
+  epochs: 200
+  n_fp_layers: 2
+  n_task_layers: 3
+  num_hop: 2
+  num_label_hops: 4 
+  label_feats: True
+  residual: True
+  hidden: 512
+  embed_size: 512
+  dropout: 0.5
+  input_drop: 0.5
+  amp: True
+  run: 5
 
+  path: DBLP_checkpoint.pt
+
+
+SeHGNN_ACM_tuned: &SeHGNN_ACM_tuned
+  <<: [*ACM,*SeHGNN]
+  model: SeHGNN
+  epochs: 200
+  n_fp_layers: 2
+  n_task_layers: 1
+  num_hop: 4
+  num_label_hops: 4 
+  label_feats: True
+  hidden: 512
+  embed_size: 512
+  dropout: 0.5
+  input_drop: 0.5
+  amp: True
+  run: 5
+  path: ACM_checkpoint.pt
+
+SeHGNN_IMDB_tuned: &SeHGNN_IMDB_tuned
+  <<: [*IMDB,*SeHGNN] 
+  model: SeHGNN
+  epochs: 200
+  n_fp_layers: 2
+  n_task_layers: 4
+  num_hop: 4
+  num_label_hops: 4 
+  label_feats: True
+  hidden: 512
+  embed_size: 512
+  dropout: 0.5
+  input_drop: 0.
+  amp: True
+  run: 5
+  path: IMDB_checkpoint.pt
+
+SeHGNN_Freebase_tuned: &SeHGNN_Freebase_tuned
+  <<: [*Freebase,*SeHGNN]
+  model: SeHGNN
+  epochs: 200
+  n_fp_layers: 2
+  n_task_layers: 4
+  num_hop: 2
+  num_label_hops: 3
+  label_feats: True
+  residual: True
+  hidden: 512
+  embed_size: 512
+  dropout: 0.5
+  input_drop: 0.5
+  lr: 3e-5
+  weight_decay: 3e-5
+  batch_size: 256
+  amp: True
+  patience: 30 
+  run: 5
+  path: Freebase_checkpoint.pt
 
 # -------model instance (our study)-------
 #SeHGNN
