@@ -53,8 +53,8 @@ class PreProcessing(nn.Module):
             
             print("homo_to_hetero_index_dict")
             homo_to_hetero_index_dict = self.get_homo_to_hetero_index_dict(data)
-            data.metapath_instance_dict_per_node = metapath_instance_dict_per_node
-            data.homo_to_hetero_index_dict = homo_to_hetero_index_dict
+            # data.metapath_instance_dict_per_node = metapath_instance_dict_per_node
+            # data.homo_to_hetero_index_dict = homo_to_hetero_index_dict
             
             print("neighbor_aggr_feature_per_metapath")
             file_path = f"{commmon_path}/neighbor_aggr_feature_per_metapath/"

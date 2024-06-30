@@ -6,7 +6,6 @@ import numpy as np
 import scipy.sparse as sp
 from collections import Counter, defaultdict
 from sklearn.metrics import f1_score
-import time
 
 
 class data_loader:
@@ -332,11 +331,7 @@ class HeteroDataSet():
         self.prop_device = 'cpu'
         self.store_device = 'cpu'
         
-
-        ## my-theis    
-        # self.node_slices = self.get_node_slices()
-        
-        
+                
         if self.cfg['dataset'] in ['DBLP', 'ACM', 'IMDB','Freebase']: #HGB dataset
             self.g, self.adjs, self.init_labels, self.num_classes, self.dl, self.trainval_nid, self.test_nid = self.load_hgb_dataset()
             # row_normarize_adj_matrix
@@ -349,7 +344,6 @@ class HeteroDataSet():
             self.tgt_type = 'A'
             self.node_dict = {"A": 0, "P": 1, "T": 2,"V":3}
             self.edge_type = {0: "PA", 1: "AP", 2: "PV", 3: "VP", 4: "PT", 5: "TP"}
-            # self.next_type = {0: [1], 1: [0, 2, 4], 2: [3], 3: [0, 2], 4: [5], 5: [0,2,4]}
             self.next_type = self.get_next_edge_type()
             self.extra_metapath = []
         elif self.cfg['dataset'] == "IMDB":
@@ -393,25 +387,8 @@ class HeteroDataSet():
                 self.total_nodes = self.dl.nodes['total'] - self.dl.nodes['count'][3]
             else:
                 self.total_nodes = self.dl.nodes['total']
-        # ###
-        # self.metapath_instance_dict_per_node = None
-        # self.homo_to_hetero_index_dict = None
-        # self.neighbor_aggr_feature_per_metapath = None
-        # # self.x = {ntype:self.heterograph[ntype].x.detach().clone() for ntype in self.node_dict.keys()}
-        # ###
-        # self.ntype_num_node = {ntype:self.heterograph[ntype].x.shape[0] for ntype in self.node_dict.keys()}
-        
-        # self.metapath_name = enum_metapath_name(cfg=cfg,name_dict=self.edge_type,type_dict=self.next_type,length=int(cfg['num_hop'])+1) 
-
+            self.neighbor_aggr_feature_per_metapath = None
             
-            
-
-
-        # ## my-theis    
-        # self.node_shift = {self.node_dict[i]:v[0] for i,v in self.node_slices.items()}
-        # self.node_count = {self.node_dict[i]:(v[1] - v[0]) for i ,v in self.node_slices.items()}
-
-
     def get_next_edge_type(self):
         next_type = {}
         # エッジタイプごとに処理
@@ -430,16 +407,7 @@ class HeteroDataSet():
         print(next_type)
         
         return next_type
-    
-    # def get_node_slices(self):
-    #     cumsum = 0
-    #     node_slices = {}
-    #     for node_type, store in self.heterograph._node_store_dict.items():
-    #         num_nodes = store.num_nodes
-    #         node_slices[node_type] = (cumsum, cumsum + num_nodes)
-    #         cumsum += num_nodes
-    #     return node_slices
-    
+        
     def get_training_setup(self):
         val_ratio = 0.2
         train_nid = self.trainval_nid.copy()
