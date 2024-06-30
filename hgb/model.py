@@ -34,6 +34,8 @@ class PreProcessing(nn.Module):
             else:   
                 etype_graph_dict = self.get_etype_graph_dict(data)
                 save_and_load_dict_pkl(file_path=file_path,dict_path=dict_path,save_dict_variable=etype_graph_dict)
+                
+            max_length = int(self.cfg['submetapath_hops']) + 1 
             metapath_name = mp.enum_metapath_name(data.edge_type,data.next_type,max_length)
             metapath_list = mp.enum_longest_metapath_index(data.edge_type,data.next_type,max_length)
             
@@ -44,7 +46,7 @@ class PreProcessing(nn.Module):
                 metapath_instance_dict_per_node = save_and_load_dict_pkl(file_path=file_path,dict_path=dict_path)
             else:
                 metapath_instance_dict_per_node = {}
-                for index in tqdm(range(data.homograph.num_nodes)):    
+                for index in tqdm(range(data.total_nodes)):    
                     tmp = mp.search_all_path(etype_graph_dict, index, metapath_name, metapath_list, data.edge_type,self.cfg["sampling_limit"])          
                     metapath_instance_dict_per_node[index] = tmp   
                 save_and_load_dict_pkl(file_path=file_path,dict_path=dict_path,save_dict_variable=metapath_instance_dict_per_node)
@@ -79,11 +81,13 @@ class PreProcessing(nn.Module):
     def get_etype_graph_dict(self,data):
         etype_graph_dict = {}
         for e_type_index,e_type in data.edge_type.items():
-            src,dst = e_type[0],e_type[1]
+            # src,dst = e_type[0],e_type[1]
+            src_index,dst_index =  data.node_dict[e_type[0]],data.node_dict[e_type[1]]
+            src_node_type_index,dst_node_type_index = [i for i in range(data.node_slices[src_index][0],data.node_slices[src_index][1])],[i for i in range(data.node_slices[dst_index][0],data.node_slices[dst_index][1])]
             # src_node_type_index,dst_node_type_index = [i for i in range(data.node_slices[src][0],data.node_slices[src][1])],[i for i in range(data.node_slices[dst][0],data.node_slices[dst][1])]
-            src_node_type_index,dst_node_type_index = [i for i in range(data.dl.nodes['shift'][src][0],data.dl.nodes['shift'][src][1])],[i for i in range(data.dl.nodes['shift'][dst][0],data.dl.nodes['shift'][dst][1])]
         
-            e_type_edge_index = data.heterograph[e_type]['edge_index']
+            # e_type_edge_index = data.heterograph[e_type]['edge_index']
+            e_type_edge_index = torch.stack([data.adjs[e_type].storage.row(),data.adjs[e_type].storage.col()])
             homograph_edge_index = e_type_edge_index.detach().clone()
         
             for col in range(e_type_edge_index.shape[1]):
@@ -93,7 +97,7 @@ class PreProcessing(nn.Module):
             print(e_type)
             print(homograph_edge_index)
         
-            tmp = {i:[] for i in range(data.homograph.num_nodes)}
+            tmp = {i:[] for i in range(data.total_nodes)}
         
             for i in range(e_type_edge_index.shape[-1]):
                 index = homograph_edge_index[0][i].item()
@@ -106,9 +110,9 @@ class PreProcessing(nn.Module):
     def get_homo_to_hetero_index_dict(self,data):
         homo_to_hetero_index_dict = {}
         index = 0
-        for node_type in tqdm(list(data.node_dict.keys())):
+        for node_type,node_type_index in tqdm(data.node_dict.items()):
             cnt = 0
-            for _ in  range(data.node_slices[node_type][0],data.node_slices[node_type][1]):
+            for _ in  range(data.node_slices[node_type_index][0],data.node_slices[node_type_index][1]):
                 homo_to_hetero_index_dict[index] = cnt
                 cnt+=1
                 index+=1
@@ -131,7 +135,7 @@ class PreProcessing(nn.Module):
                 for metapath_key, indices_list in metapaths.items():
                     concatenated_features_list = []
                     for indices in indices_list:
-                        concatenated_features = concatenate_features(node_id,data.x,metapath_key, indices)
+                        concatenated_features = concatenate_features(node_id,data.ntype_features,metapath_key, indices)
                         concatenated_features_list.append(concatenated_features)
                     #Neighbor_Aggr の計算部分にあたる
                     #------（Neighbor Aggregation）----
@@ -448,12 +452,11 @@ class PreProcessing(nn.Module):
         return data
 
 class SubMetapathAggr(nn.Module):
-    def __init__(self,cfg,node_slices,neighbor_aggr_feature_per_metapath,x,hetero_g,ntype_feature,metapath_name):
+    def __init__(self,cfg,node_slices,neighbor_aggr_feature_per_metapath,hetero_g,ntype_feature,metapath_name):
         super().__init__()
         self.cfg = cfg
         self.node_slices = node_slices
         self.neighbor_aggr_feature_per_metapath = neighbor_aggr_feature_per_metapath
-        self.x = x
         self.hetero_g = hetero_g
         self.ntypes = list(ntype_feature.keys())
         self.ntype_feature = ntype_feature

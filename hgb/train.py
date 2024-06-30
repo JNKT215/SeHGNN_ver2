@@ -245,7 +245,8 @@ def main(cfg):
 
     if False:
         from model import SubMetapathAggr
-        sb_metapath_aggr = SubMetapathAggr(cfg=cfg,node_slices=data.node_slices,neighbor_aggr_feature_per_metapath=data.neighbor_aggr_feature_per_metapath,x=data.x,hetero_g=data.heterograph_dgl,ntype_feature=data.ntype_features,metapath_name=data.metapath_name)
+        import metapath as mp
+        sb_metapath_aggr = SubMetapathAggr(cfg=cfg,node_slices=data.node_slices,neighbor_aggr_feature_per_metapath=data.neighbor_aggr_feature_per_metapath,hetero_g=data.g,ntype_feature=data.ntype_features,metapath_name=mp.enum_metapath_name(name_dict=data.edge_type,type_dict=data.next_type,length=int(cfg['submetapath_hops'])+1)).to(device)
         data = sb_metapath_aggr(data)
             
     scalar = torch.cuda.amp.GradScaler()  if cfg['amp'] and device !='cpu' else None
@@ -300,6 +301,6 @@ def main(cfg):
 
 if __name__ == "__main__":
     now_string = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    commmon_path = "/home/gachapin/document/masters-thesis-ver2"
+    commmon_path = ""
     os.environ['CUDA_LAUNCH_BLOCKING'] = "1"
     main()

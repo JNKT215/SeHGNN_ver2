@@ -165,18 +165,21 @@ SeHGNN_Freebase_tuned: &SeHGNN_Freebase_tuned
 SeHGNNver2_DBLP: &SeHGNNver2_DBLP
   <<: [*DBLP,*SeHGNN]
   model: SeHGNNver2
+  submetapath_hops: 4
   sampling_limit: 10
   path: DBLP_checkpoint.pt
 
 SeHGNNver2_ACM: &SeHGNNver2_ACM
   <<: [*ACM,*SeHGNN]
   model: SeHGNNver2
+  submetapath_hops: 4
   sampling_limit: 8
   path: ACM_checkpoint.pt
 
 SeHGNNver2_IMDB: &SeHGNNver2_IMDB
   <<: [*IMDB,*SeHGNN] 
   model: SeHGNNver2
+  submetapath_hops: 3
   sampling_limit: 5
   path: IMDB_checkpoint.pt
 
@@ -190,16 +193,16 @@ SeHGNNver2_Freebase: &SeHGNNver2_Freebase
 
 #debag
 debag:
- <<: *SeHGNN_DBLP
+ <<: *SeHGNNver2_ACM
  neighbor_aggr_mode: all
  model_name: SeHGNNver2
  submetapath_feature_weight: 0.3
  label_feats: False
- act: relu
+ act: none
  run: 1
- ACM_keep_F: False
  num_label_hops: 2
  num_hop: 2
+ submetapath_hops: 2
 
 
 defaults:

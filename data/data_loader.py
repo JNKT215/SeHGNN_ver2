@@ -385,7 +385,14 @@ class HeteroDataSet():
             assert 0
             
         self.extra_metapath = [ele for ele in self.extra_metapath if len(ele) > self.cfg['num_hops'] + 1]        
-         
+        
+        if self.cfg['model'] == "SeHGNNver2":
+            self.node_slices = {n_type_index:(self.dl.nodes['shift'][n_type_index], self.dl.nodes['shift'][n_type_index] + self.dl.nodes['count'][n_type_index]  ) for n_type_index in range(len(self.node_dict))}
+            self.ntype_features = {ntype:self.g.ndata[ntype][ntype].clone() for ntype in self.node_dict}
+            if self.cfg['dataset'] == "ACM":
+                self.total_nodes = self.dl.nodes['total'] - self.dl.nodes['count'][3]
+            else:
+                self.total_nodes = self.dl.nodes['total']
         # ###
         # self.metapath_instance_dict_per_node = None
         # self.homo_to_hetero_index_dict = None
@@ -394,7 +401,6 @@ class HeteroDataSet():
         # ###
         # self.ntype_num_node = {ntype:self.heterograph[ntype].x.shape[0] for ntype in self.node_dict.keys()}
         
-        # self.ntype_features = {ntype:self.heterograph_dgl.ndata[ntype][ntype].clone() for ntype in self.node_dict}
         # self.metapath_name = enum_metapath_name(cfg=cfg,name_dict=self.edge_type,type_dict=self.next_type,length=int(cfg['num_hop'])+1) 
 
             
