@@ -378,7 +378,7 @@ class HeteroDataSet():
         else:
             assert 0
             
-        self.extra_metapath = [ele for ele in self.extra_metapath if len(ele) > self.cfg['num_hops'] + 1]        
+        self.extra_metapath = [ele for ele in self.extra_metapath if len(ele) > self.cfg['num_hop'] + 1]        
         
         if self.cfg['model'] == "SeHGNNver2":
             self.swap_node_dict = {v: k for k, v in self.node_dict.items()}
@@ -581,7 +581,7 @@ class HeteroDataSet():
             g.nodes['M'].data['M'] = M
             g.nodes['D'].data['D'] = D
             g.nodes['A'].data['A'] = A
-            if self.cfg.num_hops > 2 or self.cfg.two_layer:
+            if self.cfg.num_hop > 2 or self.cfg.two_layer:
                 g.nodes['K'].data['K'] = K
         elif self.cfg.dataset == 'ACM':
             # A --- P* --- C
