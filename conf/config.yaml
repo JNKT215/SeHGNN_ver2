@@ -57,7 +57,7 @@ SeHGNN: &SeHGNN
   submetapath_feature_weight: 0.5
   epochs: 50
   num_hop: 2
-  run: 10
+  run: 5
 
 # -------model instance + dataset-------
 SeHGNN_DBLP: &SeHGNN_DBLP
@@ -163,37 +163,87 @@ SeHGNN_Freebase_tuned: &SeHGNN_Freebase_tuned
 # -------model instance (our study)-------
 #SeHGNN
 SeHGNNver2_DBLP: &SeHGNNver2_DBLP
-  <<: [*DBLP,*SeHGNN]
+  # <<: [*DBLP,*SeHGNN]
+  <<: *SeHGNN_DBLP_tuned
   model: SeHGNNver2
   submetapath_hops: 4
+  submetapath_feature_weight: 0.2
   sampling_limit: 10
+  neighbor_aggr_mode: all
+  path: DBLP_checkpoint.pt
+SeHGNNver2_ACM: &SeHGNNver2_ACM
+  # <<: [*ACM,*SeHGNN]
+  <<: *SeHGNN_ACM_tuned
+  model: SeHGNNver2
+  submetapath_hops: 4
+  submetapath_feature_weight: 0.2
+  sampling_limit: 8
+  neighbor_aggr_mode: all
+  path: ACM_checkpoint.pt
+SeHGNNver2_IMDB: &SeHGNNver2_IMDB
+  # <<: [*IMDB,*SeHGNN]
+  <<: *SeHGNN_IMDB_tuned
+  model: SeHGNNver2
+  submetapath_hops: 3
+  submetapath_feature_weight: 0.2
+  sampling_limit: 5
+  neighbor_aggr_mode: all
+  path: IMDB_checkpoint.pt
+SeHGNNver2_Freebase: &SeHGNNver2_Freebase
+  # <<: [*Freebase,*SeHGNN]
+  <<: *SeHGNN_Freebase_tuned
+  model: SeHGNNver2
+  lr: 0.0003
+  submetapath_feature_weight: 0.2
+  weight_decay: 0.0001
+  neighbor_aggr_mode: all
+  path: Freebase_checkpoint.pt
+
+# -------model instance (our study (exist tuned setting))-------
+#SeHGNN
+SeHGNNver2_DBLP_tuned: &SeHGNNver2_DBLP_tuned
+  <<: [*DBLP,*SeHGNN]
+  model: SeHGNNver2
+  sampling_limit: 10
+  dropout: 0.5
+  num_hop: 2
+  num_label_hops: 4
+  submetapath_hops: 4 
+  label_feats: True
+  residual: True  
+  amp: True
+  neighbor_aggr_mode: all
+  embed_size: 512
+  input_drop: 0.2
+  n_fp_layers: 4
+  n_task_layers: 3 
+  act: none
+  submetapath_feature_weight: 0.4
   path: DBLP_checkpoint.pt
 
-SeHGNNver2_ACM: &SeHGNNver2_ACM
-  <<: [*ACM,*SeHGNN]
+SeHGNNver2_ACM_tuned: &SeHGNNver2_ACM_tuned
+  <<: *SeHGNN_ACM_tuned
   model: SeHGNNver2
   submetapath_hops: 4
   sampling_limit: 8
+  submetapath_feature_weight: 0.4
+  neighbor_aggr_mode: all
   path: ACM_checkpoint.pt
 
-SeHGNNver2_IMDB: &SeHGNNver2_IMDB
-  <<: [*IMDB,*SeHGNN] 
+SeHGNNver2_IMDB_tuned: &SeHGNNver2_IMDB_tuned 
+  <<: *SeHGNN_IMDB_tuned 
   model: SeHGNNver2
   submetapath_hops: 3
   sampling_limit: 5
+  submetapath_feature_weight: 0.4
+  neighbor_aggr_mode: all
   path: IMDB_checkpoint.pt
 
-SeHGNNver2_Freebase: &SeHGNNver2_Freebase
-  <<: [*Freebase,*SeHGNN]
-  model: SeHGNNver2
-  lr: 0.0003
-  weight_decay: 0.0001
-  path: Freebase_checkpoint.pt
 
 
 #debag
 debag:
- <<: *SeHGNNver2_ACM
+ <<: *SeHGNNver2_DBLP_tuned
  neighbor_aggr_mode: all
  model_name: SeHGNNver2
  submetapath_feature_weight: 0.3

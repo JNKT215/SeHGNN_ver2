@@ -50,19 +50,22 @@ def get_eval_and_full_loader(cfg,data):
     return eval_loader, full_loader
 
 
-def train(model, feats, label_feats, labels_cuda, loss_fcn, optimizer, train_loader, evaluator,mask=None, scalar=None):
+def train(model, feats, label_feats, neighbor_aggr_feature_per_metapath, labels_cuda, loss_fcn, optimizer, train_loader, evaluator,mask=None, scalar=None):
     model.train()
     device = labels_cuda.device #本来の奴
     total_loss = 0
     iter_num = 0
-    y_true, y_pred = [], []
-
+    y_true, y_pred = [], []    
+    submetapath_feats = model.submetapath_aggr(neighbor_aggr_feature_per_metapath) if model.cfg["model"] == "SeHGNNver2" else {}
+        
     for batch in train_loader:
         # batch = batch.to(device)
         if isinstance(feats, list):
             batch_feats = [x[batch].to(device) for x in feats]
+            batch_submetapath_feats = [x[batch].to(device) for x in submetapath_feats]
         elif isinstance(feats, dict):
             batch_feats = {k: x[batch].to(device) for k, x in feats.items()}
+            batch_submetapath_feats = {k: x[batch].to(device) for k, x in submetapath_feats.items()}
         else:
             assert 0
         batch_labels_feats = {k: x[batch].to(device) for k, x in label_feats.items()}
@@ -75,13 +78,20 @@ def train(model, feats, label_feats, labels_cuda, loss_fcn, optimizer, train_loa
         optimizer.zero_grad()
         if scalar is not None:
             with torch.cuda.amp.autocast():
-                output_att = model(batch, batch_feats, batch_labels_feats, batch_mask)
+                if model.cfg["model"] == "SeHGNNver2": 
+                    output_att = model(batch, batch_feats, batch_submetapath_feats,batch_labels_feats, batch_mask)
+                else:
+                    output_att = model(batch, batch_feats, batch_labels_feats, batch_mask)
+                    
                 loss_train = loss_fcn(output_att, batch_y)
             scalar.scale(loss_train).backward()
             scalar.step(optimizer)
             scalar.update()
         else:
-            output_att = model(batch, batch_feats, batch_labels_feats, batch_mask)
+            if model.cfg["model"] == "SeHGNNver2": 
+                output_att = model(batch, batch_feats, batch_submetapath_feats,batch_labels_feats, batch_mask)
+            else:
+                output_att = model(batch, batch_feats, batch_labels_feats, batch_mask)
             loss_train = loss_fcn(output_att, batch_y)
             loss_train.backward()
             optimizer.step()
@@ -95,18 +105,22 @@ def train(model, feats, label_feats, labels_cuda, loss_fcn, optimizer, train_loa
         iter_num += 1
     loss = total_loss / iter_num
     acc = evaluator(torch.cat(y_true, dim=0), torch.cat(y_pred, dim=0))
-    return loss, acc
+    return loss, acc, submetapath_feats
 
 @torch.no_grad()
-def test(model,loader,device):
+def test(model,loader,submetapath_feats,device):
     model.eval()
     raw_preds = []
     for batch, batch_feats, batch_labels_feats, batch_mask in loader:
         batch = batch.to(device)
         batch_feats = {k: x.to(device) for k, x in batch_feats.items()}
+        batch_submetapath_feats = {k: x[batch].to(device) for k, x in submetapath_feats.items()}
         batch_labels_feats = {k: x.to(device) for k, x in batch_labels_feats.items()}
         batch_mask = None
-        pred = model(batch, batch_feats, batch_labels_feats, batch_mask).cpu()
+        if model.cfg["model"] == "SeHGNNver2": 
+            pred = model(batch, batch_feats, batch_submetapath_feats, batch_labels_feats, batch_mask).cpu()
+        else:
+            pred = model(batch, batch_feats, batch_labels_feats, batch_mask).cpu()
         raw_preds.append(pred)
     raw_preds = torch.cat(raw_preds, dim=0).to(device)
     
@@ -118,7 +132,8 @@ def get_final_score(cfg,data,best_pred,full_loader,model,checkpt_file,labels,dev
     if len(full_loader):
         model.load_state_dict(torch.load(f'{checkpt_file}.pt', map_location='cpu'), strict=True)
         if not cfg["cpu"]: torch.cuda.empty_cache()
-        raw_preds = test(model,full_loader,device)
+        submetapath_feats = model.submetapath_aggr(data.neighbor_aggr_feature_per_metapath) if model.cfg["model"] == "SeHGNNver2" else {}
+        raw_preds = test(model,full_loader,submetapath_feats,device)
         all_pred[data.extra_nid] = raw_preds
     torch.save(all_pred, f'{checkpt_file}.pt')
 
@@ -174,7 +189,7 @@ def run(cfg,model, data,optimizer,loader,device,scalar=None):
         gc.collect()
         if device == 'cuda': torch.cuda.synchronize()
         start = time.time()
-        loss, acc = train(model, data.feats, data.label_feats,labels_cuda, loss_fcn, optimizer, train_loader, evaluator,scalar=scalar)
+        loss, acc, submetapath_feats = train(model, data.feats, data.label_feats,data.neighbor_aggr_feature_per_metapath,labels_cuda, loss_fcn, optimizer, train_loader, evaluator,scalar=scalar)
         if device == 'cuda': torch.cuda.synchronize()
         end = time.time()
         
@@ -186,7 +201,7 @@ def run(cfg,model, data,optimizer,loader,device,scalar=None):
         train_times.append(end-start)
 
         start = time.time()
-        raw_preds = test(model,eval_loader,device)
+        raw_preds = test(model,eval_loader,submetapath_feats,device)
         loss_train = loss_fcn(raw_preds[:data.trainval_point], labels[data.train_nid]).item()
         val_loss = loss_fcn(raw_preds[data.trainval_point:data.valtest_point], labels[data.val_nid]).item()
         test_loss = loss_fcn(raw_preds[data.valtest_point:data.labeled_num_nodes], labels[data.test_nid]).item()

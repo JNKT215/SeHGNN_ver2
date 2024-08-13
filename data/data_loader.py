@@ -322,6 +322,7 @@ class HeteroDataSet():
         self.raw_feats = {}
         self.feats = {}
         self.label_feats = {}
+        self.neighbor_aggr_feature_per_metapath ={}
         #metapath_keys(feature・label_keys)
         self.feat_keys = []
         self.label_feat_keys = []

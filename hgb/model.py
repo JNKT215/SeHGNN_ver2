@@ -27,54 +27,26 @@ class PreProcessing(nn.Module):
                 
         if model_name == "SeHGNNver2":
             # compute submetapth semantic fusion tensor
-            file_path = f"{commmon_path}/etype_graph_dict/"
-            dict_path = f"{self.cfg.dataset}_e_type_dict.pkl"
-            if os.path.isfile(f"{file_path}/{dict_path}"):
-                etype_graph_dict = save_and_load_dict_pkl(file_path=file_path,dict_path=dict_path)
-            else:   
-                etype_graph_dict = self.get_etype_graph_dict(data)
-                save_and_load_dict_pkl(file_path=file_path,dict_path=dict_path,save_dict_variable=etype_graph_dict)
-                
+            print("etype_graph_dict")
+            etype_graph_dict = self.get_etype_graph_dict(data)
+
             max_length = int(self.cfg['submetapath_hops']) + 1 
             metapath_name = mp.enum_metapath_name(data.edge_type,data.next_type,max_length)
             metapath_list = mp.enum_longest_metapath_index(data.edge_type,data.next_type,max_length)
             
             print("metapath_instance_dict_per_node")    
-            file_path = f"{commmon_path}/metapath_instance_dict/"
-            dict_path = f"{self.cfg.dataset}_num_hop_{self.cfg.num_hop}_num_label_hops_{self.cfg.num_label_hops}_metapath_instance_dict_per_node.pkl"
-            if os.path.isfile(f"{file_path}/{dict_path}"):
-                metapath_instance_dict_per_node = save_and_load_dict_pkl(file_path=file_path,dict_path=dict_path)
-            else:
-                metapath_instance_dict_per_node = {}
-                for index in tqdm(range(data.total_nodes)):    
-                    tmp = mp.search_all_path(etype_graph_dict, index, metapath_name, metapath_list, data.edge_type,self.cfg["sampling_limit"])          
-                    metapath_instance_dict_per_node[index] = tmp   
-                save_and_load_dict_pkl(file_path=file_path,dict_path=dict_path,save_dict_variable=metapath_instance_dict_per_node)
+            metapath_instance_dict_per_node = {}
+            for index in tqdm(range(data.total_nodes)):    
+                tmp = mp.search_all_path(etype_graph_dict, index, metapath_name, metapath_list, data.edge_type,self.cfg["sampling_limit"])          
+                metapath_instance_dict_per_node[index] = tmp   
             
             print("homo_to_hetero_index_dict")
             homo_to_hetero_index_dict = self.get_homo_to_hetero_index_dict(data)
-            # data.metapath_instance_dict_per_node = metapath_instance_dict_per_node
-            # data.homo_to_hetero_index_dict = homo_to_hetero_index_dict
             
             print("neighbor_aggr_feature_per_metapath")
-            file_path = f"{commmon_path}/neighbor_aggr_feature_per_metapath/"
-            dict_path = f"{self.cfg.dataset}_num_hop_{self.cfg.num_hop}_num_label_hops_{self.cfg.num_label_hops}_neighbor_aggr_feature_per_metapath.pkl"
-            if os.path.isfile(f"{file_path}/{dict_path}"):
-                try:
-                    neighbor_aggr_feature_per_metapath = save_and_load_dict_pkl(file_path=file_path,dict_path=dict_path)
-                except:
-                    neighbor_aggr_feature_per_metapath = self.calc_submetapath_neighbor_aggr_feature(data,homo_to_hetero_index_dict,metapath_instance_dict_per_node,echo=False)
-
-                # neighbor_aggr_feature_per_metapath =joblib.load(filename=f"{file_path}/{dict_path}")
-            else:
-                neighbor_aggr_feature_per_metapath = self.calc_submetapath_neighbor_aggr_feature(data,homo_to_hetero_index_dict,metapath_instance_dict_per_node,echo=False)
-                if not os.path.exists(file_path):
-                    os.makedirs(file_path)
-                # joblib.dump(value=neighbor_aggr_feature_per_metapath,filename=f"{file_path}/{dict_path}",compress=3)
-                save_and_load_dict_pkl(file_path=file_path,dict_path=dict_path,save_dict_variable=neighbor_aggr_feature_per_metapath)
+            neighbor_aggr_feature_per_metapath = self.calc_submetapath_neighbor_aggr_feature(data,homo_to_hetero_index_dict,metapath_instance_dict_per_node,echo=False)
             
             data.neighbor_aggr_feature_per_metapath = neighbor_aggr_feature_per_metapath
-            
             
         return data
     
@@ -450,11 +422,10 @@ class PreProcessing(nn.Module):
         return data
 
 class SubMetapathAggr(nn.Module):
-    def __init__(self,cfg,node_slices,neighbor_aggr_feature_per_metapath,hetero_g,ntype_feature,metapath_name):
+    def __init__(self,cfg,node_slices,hetero_g,ntype_feature,metapath_name):
         super().__init__()
         self.cfg = cfg
         self.node_slices = node_slices
-        self.neighbor_aggr_feature_per_metapath = neighbor_aggr_feature_per_metapath
         self.hetero_g = hetero_g
         self.ntypes = list(ntype_feature.keys())
         self.ntype_feature = ntype_feature
@@ -643,11 +614,11 @@ class SubMetapathAggr(nn.Module):
         return batch
 
 
-    def forward(self,batch):
+    def forward(self,neighbor_aggr_feature_per_metapath):
         if False: 
             batch = self.test_batch()
         
-        semantic_fusion_per_nodetype_feature = self.calc_submetapath_semantic_fusion_feature(neighbor_aggr_feature_per_metapath=self.neighbor_aggr_feature_per_metapath,node_slices=self.node_slices,echo=False)
+        semantic_fusion_per_nodetype_feature = self.calc_submetapath_semantic_fusion_feature(neighbor_aggr_feature_per_metapath=neighbor_aggr_feature_per_metapath,node_slices=self.node_slices,echo=False)
         
         for node_type in self.ntypes:
             self.hetero_g.nodes[node_type].data[node_type] = semantic_fusion_per_nodetype_feature[node_type].clone().to("cpu")
@@ -657,9 +628,8 @@ class SubMetapathAggr(nn.Module):
         submetapath_feature_dict = {}
         feat_keys = list(self.hetero_g.nodes[self.cfg['tgt_type']].data.keys())
         
-        batch = batch.to("cpu")
         for k in feat_keys:                
-            submetapath_feature_dict[k] = self.hetero_g.nodes[self.cfg['tgt_type']].data.pop(k)[batch].to("cuda")
+            submetapath_feature_dict[k] = self.hetero_g.nodes[self.cfg['tgt_type']].data.pop(k).to("cuda")
         gc.collect()
         
         for ntype,ntype_feature in self.ntype_feature.items():
@@ -855,7 +825,7 @@ class SeHGNNver2(nn.Module):
         self.residual = cfg["residual"]
 
         self.input_drop = nn.Dropout(cfg["input_drop"])
-        self.submetapath_aggr = SubMetapathAggr(cfg=self.cfg,node_slices=data.node_slices,neighbor_aggr_feature_per_metapath=data.neighbor_aggr_feature_per_metapath,hetero_g=data.g,ntype_feature=data.ntype_features,metapath_name=mp.enum_metapath_name(name_dict=data.edge_type,type_dict=data.next_type,length=int(self.cfg['submetapath_hops'])+1))
+        self.submetapath_aggr = SubMetapathAggr(cfg=self.cfg,node_slices=data.node_slices,hetero_g=data.g,ntype_feature=data.ntype_features,metapath_name=mp.enum_metapath_name(name_dict=data.edge_type,type_dict=data.next_type,length=int(self.cfg['submetapath_hops'])+1))
 
         self.data_size = data.data_size
         self.embeding = nn.ParameterDict({})
@@ -941,7 +911,7 @@ class SeHGNNver2(nn.Module):
             elif hasattr(v, 'reset_parameters'):
                 v.reset_parameters()
 
-    def forward(self,batch,feature_dict, label_dict={}, mask=None):
+    def forward(self,batch,feature_dict,submetapath_feature_dict, label_dict={}, mask=None):
         if isinstance(feature_dict[self.tgt_type], torch.Tensor):
             features = {k: self.input_drop(x @ self.embeding[k]) for k, x in feature_dict.items()}
         elif isinstance(feature_dict[self.tgt_type], SparseTensor):
@@ -954,8 +924,6 @@ class SeHGNNver2(nn.Module):
         C = self.num_channels #metapath
         D = features[self.tgt_type].shape[1]
         labels = {k: self.input_drop(x @ self.labels_embeding[k]) for k, x in label_dict.items()}
-        
-        submetapath_feature_dict = self.submetapath_aggr(batch)
         
         if self.cfg['neighbor_aggr_mode'] == "only_submetapth_feature":
             x = [submetapath_feature_dict[k] for k in self.feat_keys] + [labels[k] for k in self.label_feat_keys]
@@ -991,6 +959,7 @@ class SeHGNN(nn.Module):
     '''
     def __init__(self,cfg,feat_keys,label_feat_keys,data_size=None):
         super(SeHGNN, self).__init__()
+        self.cfg = cfg
         self.dataset = cfg["dataset"]
         self.feat_keys = sorted(feat_keys)
         self.label_feat_keys = sorted(label_feat_keys)
