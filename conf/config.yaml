@@ -40,6 +40,7 @@ SeHGNN: &SeHGNN
   label_feats: False
   num_label_hops: 2
   n_fp_layers: 2
+  n_fp_submetapath_layers: 2
   n_task_layers: 3
   hidden: 512
   dropout: 0.5
@@ -166,6 +167,7 @@ SeHGNNver2_DBLP: &SeHGNNver2_DBLP
   # <<: [*DBLP,*SeHGNN]
   <<: *SeHGNN_DBLP_tuned
   model: SeHGNNver2
+  n_fp_submetapath_layers: 2
   submetapath_hops: 4
   submetapath_feature_weight: 0.2
   sampling_limit: 10
@@ -175,6 +177,7 @@ SeHGNNver2_ACM: &SeHGNNver2_ACM
   # <<: [*ACM,*SeHGNN]
   <<: *SeHGNN_ACM_tuned
   model: SeHGNNver2
+  n_fp_submetapath_layers: 2
   submetapath_hops: 4
   submetapath_feature_weight: 0.2
   sampling_limit: 8
@@ -184,6 +187,7 @@ SeHGNNver2_IMDB: &SeHGNNver2_IMDB
   # <<: [*IMDB,*SeHGNN]
   <<: *SeHGNN_IMDB_tuned
   model: SeHGNNver2
+  n_fp_submetapath_layers: 2
   submetapath_hops: 3
   submetapath_feature_weight: 0.2
   sampling_limit: 5
@@ -193,6 +197,7 @@ SeHGNNver2_Freebase: &SeHGNNver2_Freebase
   # <<: [*Freebase,*SeHGNN]
   <<: *SeHGNN_Freebase_tuned
   model: SeHGNNver2
+  n_fp_submetapath_layers: 2
   lr: 0.0003
   submetapath_feature_weight: 0.2
   weight_decay: 0.0001
@@ -243,11 +248,12 @@ SeHGNNver2_IMDB_tuned: &SeHGNNver2_IMDB_tuned
 
 #debag
 debag:
- <<: *SeHGNNver2_DBLP_tuned
+ <<: *SeHGNNver2_ACM_tuned
  neighbor_aggr_mode: all
- model_name: SeHGNNver2
+#  model_name: SeHGNN
  submetapath_feature_weight: 0.3
  label_feats: False
+ n_fp_submetapath_layers: 2
  act: none
  run: 1
  num_label_hops: 2
