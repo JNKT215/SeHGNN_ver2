@@ -32,7 +32,7 @@ Freebase: &Freebase
   <<: *HeteroGraph
   dataset: Freebase
   nclass: 7
-  tgt_type: B
+  tgt_type: '0'
 
 # -------model instance------------
 SeHGNN: &SeHGNN
@@ -56,6 +56,8 @@ SeHGNN: &SeHGNN
   num_heads: 1
   neighbor_aggr_mode: use_submetapath_for_semantic_fusion
   submetapath_feature_weight: 0.5
+  sub_metapth_act: leaky_relu
+  submetapath_attention: False
   epochs: 50
   num_hop: 2
   run: 5
@@ -171,6 +173,8 @@ SeHGNNver2_DBLP: &SeHGNNver2_DBLP
   submetapath_hops: 4
   submetapath_feature_weight: 0.2
   sampling_limit: 10
+  sub_metapth_act: leaky_relu
+  submetapath_attention: True
   neighbor_aggr_mode: all
   path: DBLP_checkpoint.pt
 SeHGNNver2_ACM: &SeHGNNver2_ACM
@@ -181,6 +185,8 @@ SeHGNNver2_ACM: &SeHGNNver2_ACM
   submetapath_hops: 4
   submetapath_feature_weight: 0.2
   sampling_limit: 8
+  sub_metapth_act: leaky_relu
+  submetapath_attention: True
   neighbor_aggr_mode: all
   path: ACM_checkpoint.pt
 SeHGNNver2_IMDB: &SeHGNNver2_IMDB
@@ -191,6 +197,8 @@ SeHGNNver2_IMDB: &SeHGNNver2_IMDB
   submetapath_hops: 3
   submetapath_feature_weight: 0.2
   sampling_limit: 5
+  sub_metapth_act: leaky_relu
+  submetapath_attention: True
   neighbor_aggr_mode: all
   path: IMDB_checkpoint.pt
 SeHGNNver2_Freebase: &SeHGNNver2_Freebase
@@ -201,6 +209,7 @@ SeHGNNver2_Freebase: &SeHGNNver2_Freebase
   lr: 0.0003
   submetapath_feature_weight: 0.2
   weight_decay: 0.0001
+  sub_metapth_act: leaky_relu
   neighbor_aggr_mode: all
   path: Freebase_checkpoint.pt
 
@@ -224,6 +233,8 @@ SeHGNNver2_DBLP_tuned: &SeHGNNver2_DBLP_tuned
   n_task_layers: 3 
   act: none
   submetapath_feature_weight: 0.4
+  sub_metapth_act: leaky_relu
+  submetapath_attention: True
   path: DBLP_checkpoint.pt
 
 SeHGNNver2_ACM_tuned: &SeHGNNver2_ACM_tuned
@@ -249,16 +260,19 @@ SeHGNNver2_IMDB_tuned: &SeHGNNver2_IMDB_tuned
 #debag
 debag:
  <<: *SeHGNNver2_ACM_tuned
- neighbor_aggr_mode: all
+ neighbor_aggr_mode: use_submetapath_for_semantic_fusion
 #  model_name: SeHGNN
- submetapath_feature_weight: 0.3
- label_feats: False
- n_fp_submetapath_layers: 2
+#  submetapath_feature_weight: 0.3
+ label_feats: True
+#  n_fp_submetapath_layers: 2
  act: none
- run: 1
+ run: 5
+ epochs: 50
  num_label_hops: 2
  num_hop: 2
  submetapath_hops: 2
+ sub_metapth_act: leaky_relu
+ submetapath_attention: True
 
 
 defaults:
