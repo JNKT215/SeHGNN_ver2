@@ -223,13 +223,13 @@ SeHGNNver2_DBLP_tuned: &SeHGNNver2_DBLP_tuned
 
 
 SeHGNNver2_ACM_tuned: &SeHGNNver2_ACM_tuned
-  <<: *SeHGNN_ACM_tuned
+  <<: *SeHGNNver2_ACM
   submetapath_hops: 4
   submetapath_feature_weight: 0.4
   sampling_limit: 20 
 
 SeHGNNver2_IMDB_tuned: &SeHGNNver2_IMDB_tuned 
-  <<: *SeHGNN_IMDB_tuned 
+  <<: *SeHGNNver2_IMDB 
   submetapath_hops: 4
   sampling_limit: 15
 
