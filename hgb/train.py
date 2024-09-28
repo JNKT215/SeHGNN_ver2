@@ -257,13 +257,6 @@ def main(cfg):
     data = HeteroDataSet(cfg=cfg,root=root)
     preprocessing = PreProcessing(cfg=cfg).to(device)
     data  = preprocessing(data,model_name=cfg["model"],commmon_path=commmon_path)
-
-    if False:
-        from model import SubMetapathAggr
-        import metapath as mp
-        sb_metapath_aggr = SubMetapathAggr(cfg=cfg,node_slices=data.node_slices,neighbor_aggr_feature_per_metapath=data.neighbor_aggr_feature_per_metapath,hetero_g=data.g,ntype_feature=data.ntype_features,metapath_name=mp.enum_metapath_name(name_dict=data.edge_type,type_dict=data.next_type,length=int(cfg['submetapath_hops'])+1)).to(device)
-        data = sb_metapath_aggr(data)
-            
     scalar = torch.cuda.amp.GradScaler()  if cfg['amp'] and device !='cpu' else None
     
     artifacts,test_accs_micro,test_accs_macro = {},[],[]
