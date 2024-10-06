@@ -3,7 +3,7 @@ import hydra,gc
 from hydra import utils
 from tqdm import tqdm
 import mlflow
-from utils import EarlyStopping,set_random_seed,set_checkpt_folder,write_SeHGNN_epoch_to_loss_to_time
+from utils import EarlyStopping,set_random_seed,set_checkpt_folder
 # from data import HeteroDataLoader
 import torch 
 import time
@@ -143,7 +143,7 @@ def get_final_score(cfg,data,best_pred,full_loader,model,checkpt_file,labels,dev
         predict_prob = torch.sigmoid(all_pred)
 
     test_logits = predict_prob[data.test_nid]
-    evaluate_dir_path = commmon_path + '/evaluate/' + f"/{cfg.model}/" + f"/{cfg.dataset}/" + f"/{now_string}/"
+    
     if cfg["dataset"] != 'IMDB':
         pred = test_logits.cpu().numpy().argmax(axis=1)
         data.dl.gen_file_for_evaluate(test_idx=data.test_nid, label=pred, file_name=f"{cfg.dataset}_{cfg.seeds}_{checkpt_file.split('/')[-1]}.txt")
@@ -232,11 +232,6 @@ def run(cfg,model, data,optimizer,loader,device,scalar=None):
     
     train_acc,val_acc,test_acc = get_final_score(cfg,data,best_pred,full_loader,model,checkpt_file,labels,device)
      
-    write_SeHGNN_epoch_to_loss_to_time(dir_path=commmon_path + '/record/' + f"/{cfg.model}/" + f"/{cfg.dataset}/" ,
-                                       output_file_name=f'num_hop_{cfg.num_hop}_num_label_hops_{cfg.num_label_hops}_record.csv' if cfg['model'] == "SeHGNN" else f'num_hop_{cfg.num_hop}_num_label_hops_{cfg.num_label_hops}_neighbor_aggr_mode_{cfg.neighbor_aggr_mode}_record_.csv',
-                                       model_name=cfg['model'],
-                                       repletion=f"num_hop_{cfg.num_hop}_num_label_hops_{cfg.num_label_hops}_label_feats_{cfg.label_feats}",
-                                       epochs=train_epoch_records,times=train_time_records,losses=train_loss_records)
     return test_acc
 
 
@@ -256,7 +251,7 @@ def main(cfg):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     data = HeteroDataSet(cfg=cfg,root=root)
     preprocessing = PreProcessing(cfg=cfg).to(device)
-    data  = preprocessing(data,model_name=cfg["model"],commmon_path=commmon_path)
+    data  = preprocessing(data,model_name=cfg["model"])
     scalar = torch.cuda.amp.GradScaler()  if cfg['amp'] and device !='cpu' else None
     
     artifacts,test_accs_micro,test_accs_macro = {},[],[]
@@ -309,6 +304,5 @@ def main(cfg):
 
 if __name__ == "__main__":
     now_string = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    commmon_path = ""
     os.environ['CUDA_LAUNCH_BLOCKING'] = "1"
     main()

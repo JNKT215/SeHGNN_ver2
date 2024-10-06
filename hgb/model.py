@@ -14,7 +14,7 @@ class PreProcessing(nn.Module):
         super().__init__()
         self.cfg = cfg
 
-    def forward(self,data,model_name,commmon_path):
+    def forward(self,data,model_name):
         max_length = int(self.cfg['num_hop']) + 1 
     
         # ---compute neighbor aggregaiton(dgl) mainmetapath ---
@@ -85,9 +85,10 @@ class PreProcessing(nn.Module):
                     #Neighbor_Aggr の計算部分にあたる
                     #------（Neighbor Aggregation）----
                     concatenated_features = F.embedding(torch.tensor(indices_list),all_features).view(len(indices_list),-1)
-                    calc_metapath_insntance_feature_per_metapath = torch.mean(concatenated_features,dim=0)
+                    # calc_metapath_insntance_feature_per_metapath = torch.mean(concatenated_features,dim=0)
                     #------（Neighbor Aggregation）----
-                    neighbor_aggr_feature_per_metapath[node_id][metapath_key] = calc_metapath_insntance_feature_per_metapath
+                    # neighbor_aggr_feature_per_metapath[node_id][metapath_key] = calc_metapath_insntance_feature_per_metapath
+                    neighbor_aggr_feature_per_metapath[node_id][metapath_key] = concatenated_features
 
             
             # # 結果を表示（neighbor_aggr_feature_per_metapath）
@@ -406,40 +407,20 @@ class SubMetapathAggr(nn.Module):
         self.ntype_num_node = {k:v.shape[0] for k,v in ntype_feature.items()}
         self.data_size = {k:v.shape[1] for k,v in ntype_feature.items()}
         self.metapath_name = metapath_name
+        self.num_heads = 8
         if self.cfg['sub_metapth_act'] == "leaky_relu":
             self.act = torch.nn.LeakyReLU(0.2)
         elif self.cfg['sub_metapth_act'] == "none":
             self.act = lambda x: x
-
+        self.n_lin = nn.Linear(cfg["embed_size"],cfg["embed_size"])
         self.sub_metapath_atten_vector = nn.ParameterDict({})
-        self.embeding_concat_ver2 = nn.ModuleDict({})
+        self.input_drop_concat_ver2 = nn.Dropout(cfg["input_drop"])
+        self.embeding_concat_ver2 = nn.ParameterDict({})
         for ntype,metapaths in metapath_name.items():
-            self.embeding_concat_ver2[ntype] =  nn.Sequential(
-                                                                *([LinearPerSubMetapath(self.ntype_feature[ntype].shape[-1], cfg["embed_size"]),
-                                                                nn.LayerNorm([cfg["embed_size"]]),
-                                                                nn.PReLU(),
-                                                                nn.Dropout(cfg["dropout"]),]
-                                                                + unfold_nested_list([[
-                                                                LinearPerSubMetapath(cfg["embed_size"], cfg["embed_size"]),
-                                                                nn.LayerNorm([cfg["embed_size"]]),
-                                                                nn.PReLU(),
-                                                                nn.Dropout(cfg["dropout"]),] for _ in range(cfg["n_fp_submetapath_layers"] - 1)])
-                                                                )
-                                                            ) 
+            self.embeding_concat_ver2[ntype] =  nn.Parameter(torch.Tensor(self.ntype_feature[ntype].shape[-1], cfg["embed_size"]))
             for metapath in metapaths:
                 input_dim = [self.ntype_feature[i].shape[-1] for i in metapath]
-                self.embeding_concat_ver2[metapath] =  nn.Sequential(
-                                                                        *([LinearPerSubMetapath(sum(input_dim), cfg["embed_size"]),
-                                                                        nn.LayerNorm([cfg["embed_size"]]),
-                                                                        nn.PReLU(),
-                                                                        nn.Dropout(cfg["dropout"]),]
-                                                                        + unfold_nested_list([[
-                                                                        LinearPerSubMetapath(cfg["embed_size"], cfg["embed_size"]),
-                                                                        nn.LayerNorm([cfg["embed_size"]]),
-                                                                        nn.PReLU(),
-                                                                        nn.Dropout(cfg["dropout"]),] for _ in range(cfg["n_fp_submetapath_layers"] - 1)])
-                                                                        )
-                                                                    ) 
+                self.embeding_concat_ver2[metapath] =  nn.Parameter(torch.Tensor(sum(input_dim) , cfg["embed_size"]))
             self.sub_metapath_atten_vector[ntype] = nn.Parameter(torch.empty(1,cfg["embed_size"]))
         self.reset_parameters()
     def reset_parameters(self):
@@ -461,6 +442,7 @@ class SubMetapathAggr(nn.Module):
                         layer.reset_parameters()
             elif hasattr(v, 'reset_parameters'):
                 v.reset_parameters()
+        self.n_lin.reset_parameters()
                 
 
     def forward(self,neighbor_aggr_feature_per_metapath):
@@ -535,16 +517,19 @@ class SubMetapathAggr(nn.Module):
         #semantic fusion
         submetapath_emmbedding_feature = []
         for _, metapaths in tqdm(neighbor_aggr_feature_per_metapath.items()):
-            features_per_node = [self.embeding_concat_ver2[metapath](feature.to("cuda")) for metapath,feature in metapaths.items()]
+            features_per_node = [torch.sum(self.input_drop_concat_ver2(feature.to("cuda") @ self.embeding_concat_ver2[metapath]),dim=0) for metapath,feature in metapaths.items()]
             semantic_fusion_feature_list_tensor = torch.stack(features_per_node)
             #------（Semantic Fusion）---- 
-            if self.cfg['submetapath_attention']:
+            if self.cfg['calc_type'] == "attention":
                 target_type = list(metapaths.keys())[0]
                 attn_score = self.act((self.sub_metapath_atten_vector[target_type] * torch.tanh(semantic_fusion_feature_list_tensor)).sum(-1))
                 attn = F.softmax(attn_score, dim=0)
                 semantic_fusion_feature = torch.sum(attn.view(len(metapaths),  -1) * semantic_fusion_feature_list_tensor, dim=0)
-            else: # mean
+            elif self.cfg['calc_type'] == "mean": # mean
                 semantic_fusion_feature = torch.mean(semantic_fusion_feature_list_tensor,dim=0)
+            elif self.cfg['calc_type'] == "linear": # mean
+                semantic_fusion_feature = torch.mean(semantic_fusion_feature_list_tensor,dim=0)
+                semantic_fusion_feature = self.n_lin(semantic_fusion_feature)
             submetapath_emmbedding_feature.append(semantic_fusion_feature)  
             #------（Semantic Fusion）----
           
@@ -684,8 +669,14 @@ class SeHGNNver2(nn.Module):
         self.input_drop = nn.Dropout(cfg["input_drop"])
         self.submetapath_aggr = SubMetapathAggr(cfg=self.cfg,node_slices=data.node_slices,hetero_g=data.g,ntype_feature=data.ntype_features,metapath_name=mp.enum_metapath_name(name_dict=data.edge_type,type_dict=data.next_type,length=int(self.cfg['submetapath_hops'])+1))
         self.sub_metapath_alpha_q = nn.ParameterDict({})
+        self.metapath_lins = nn.ModuleDict({})
         for k in self.feat_keys:        
             self.sub_metapath_alpha_q[k] = nn.Parameter(torch.empty(cfg["hidden"]))
+            self.metapath_lins[k] = nn.Linear(cfg["embed_size"], cfg["hidden"])
+        self.q = nn.Parameter(torch.empty(1, cfg["hidden"] * (len(self.feat_keys) + 1 )))
+        # self.k_lin = nn.Linear(cfg["hidden"] * (len(self.feat_keys) + 1 ),cfg["hidden"] * (len(self.feat_keys) + 1 ))
+        self.k_lin = nn.Linear(cfg["hidden"], cfg["hidden"])
+        
         self.data_size = data.data_size
         self.embeding = nn.ParameterDict({})
         for k, v in self.data_size.items():
@@ -769,6 +760,8 @@ class SeHGNNver2(nn.Module):
                         layer.reset_parameters()
             elif hasattr(v, 'reset_parameters'):
                 v.reset_parameters()
+        self.k_lin.reset_parameters()
+        self.q.data.uniform_(-0.5, 0.5)
 
     def forward(self,batch,feature_dict,submetapath_feature_dict, label_dict={}, mask=None):
         if isinstance(feature_dict[self.tgt_type], torch.Tensor):
@@ -792,6 +785,11 @@ class SeHGNNver2(nn.Module):
         elif self.cfg['neighbor_aggr_mode'] == "all_ver2":
             alpha_dict = {key:self.sub_metapath_attention(features[key],submetapath_feature_dict[key],self.sub_metapath_alpha_q[key]) for key in self.feat_keys}
             x = [ (alpha_dict[k][0] * features[k]) + (alpha_dict[k][1] * submetapath_feature_dict[k]) for k in self.feat_keys] + [labels[k] for k in self.label_feat_keys]
+        elif self.cfg['neighbor_aggr_mode'] == "all_ver3":
+            sub_features = [submetapath_feature_dict[sub_key] for sub_key in self.feat_keys]
+            alpha_dict = self.sub_metapath_attention_ver2(features,sub_features)
+            # x = [ (alpha_dict[k][0] * features[k]) + (alpha_dict[k][1] * submetapath_feature_dict[k]) for k in self.feat_keys] + [labels[k] for k in self.label_feat_keys]
+            x = [  features[k] + (alpha_dict[k] * submetapath_feature_dict[k]) for k in self.feat_keys] + [labels[k] for k in self.label_feat_keys]
         elif self.cfg['neighbor_aggr_mode'] == "use_submetapath_for_semantic_fusion":
             x =  [features[k] for k in self.feat_keys] + [submetapath_feature_dict[k] for k in self.feat_keys] + [labels[k] for k in self.label_feat_keys]
  
@@ -816,11 +814,19 @@ class SeHGNNver2(nn.Module):
         
     def sub_metapath_attention(self,main_feature,sub_feature,q):
         out = torch.stack([main_feature,sub_feature])
-        attn_score = (q * torch.tanh(out).mean(1)).sum(-1)
+        attn_score = (q * torch.tanh(self.k_lin(out)).mean(1)).sum(-1)
         attn = F.softmax(attn_score, dim=0)
         main_alpha,sub_alpha = attn[0].item(),attn[1].item()
         return main_alpha,sub_alpha
     
+    def sub_metapath_attention_ver2(self,features,sub_features):
+        concat_list = [ torch.cat([features[k]] + sub_features, dim=1) for k in self.feat_keys]
+        out = torch.stack(concat_list)
+        attn_score = (self.q * torch.tanh(out).mean(1)).sum(-1)
+        attn = F.softmax(attn_score, dim=0)
+        # att_dict = {metapath:(1 - attn[index].item(),attn[index].item())for index,metapath in enumerate(self.feat_keys)}
+        att_dict = {metapath:attn[index].item()for index,metapath in enumerate(self.feat_keys)}
+        return att_dict
 
 class SeHGNN(nn.Module):
     '''

@@ -36,11 +36,11 @@ Freebase: &Freebase
 
 # -------model instance------------
 SeHGNN: &SeHGNN
+  model: SeHGNN
   embed_size: 256
   label_feats: False
   num_label_hops: 2
   n_fp_layers: 2
-  n_fp_submetapath_layers: 2
   n_task_layers: 3
   hidden: 512
   dropout: 0.5
@@ -54,10 +54,6 @@ SeHGNN: &SeHGNN
   batch_size: 10000
   patience: 50
   num_heads: 1
-  neighbor_aggr_mode: use_submetapath_for_semantic_fusion
-  submetapath_feature_weight: 0.5
-  sub_metapth_act: leaky_relu
-  submetapath_attention: False
   epochs: 50
   num_hop: 2
   run: 5
@@ -67,7 +63,6 @@ SeHGNN_DBLP: &SeHGNN_DBLP
   <<: [*DBLP,*SeHGNN]
   model: SeHGNN
   path: DBLP_checkpoint.pt
-
 
 SeHGNN_ACM: &SeHGNN_ACM
   <<: [*ACM,*SeHGNN]
@@ -103,9 +98,7 @@ SeHGNN_DBLP_tuned: &SeHGNN_DBLP_tuned
   input_drop: 0.5
   amp: True
   run: 5
-
   path: DBLP_checkpoint.pt
-
 
 SeHGNN_ACM_tuned: &SeHGNN_ACM_tuned
   <<: [*ACM,*SeHGNN]
@@ -166,7 +159,6 @@ SeHGNN_Freebase_tuned: &SeHGNN_Freebase_tuned
 # -------model instance (our study)-------
 #SeHGNN
 SeHGNNver2_DBLP: &SeHGNNver2_DBLP
-  # <<: [*DBLP,*SeHGNN]
   <<: *SeHGNN_DBLP_tuned
   model: SeHGNNver2
   n_fp_submetapath_layers: 2
@@ -174,11 +166,11 @@ SeHGNNver2_DBLP: &SeHGNNver2_DBLP
   submetapath_feature_weight: 0.2
   sampling_limit: 10
   sub_metapth_act: leaky_relu
-  submetapath_attention: True
+  calc_type: attention
   neighbor_aggr_mode: all
   path: DBLP_checkpoint.pt
+
 SeHGNNver2_ACM: &SeHGNNver2_ACM
-  # <<: [*ACM,*SeHGNN]
   <<: *SeHGNN_ACM_tuned
   model: SeHGNNver2
   n_fp_submetapath_layers: 2
@@ -186,11 +178,11 @@ SeHGNNver2_ACM: &SeHGNNver2_ACM
   submetapath_feature_weight: 0.2
   sampling_limit: 8
   sub_metapth_act: leaky_relu
-  submetapath_attention: True
+  calc_type: attention
   neighbor_aggr_mode: all
   path: ACM_checkpoint.pt
+
 SeHGNNver2_IMDB: &SeHGNNver2_IMDB
-  # <<: [*IMDB,*SeHGNN]
   <<: *SeHGNN_IMDB_tuned
   model: SeHGNNver2
   n_fp_submetapath_layers: 2
@@ -198,11 +190,11 @@ SeHGNNver2_IMDB: &SeHGNNver2_IMDB
   submetapath_feature_weight: 0.2
   sampling_limit: 5
   sub_metapth_act: leaky_relu
-  submetapath_attention: True
+  calc_type: attention
   neighbor_aggr_mode: all
   path: IMDB_checkpoint.pt
+
 SeHGNNver2_Freebase: &SeHGNNver2_Freebase
-  # <<: [*Freebase,*SeHGNN]
   <<: *SeHGNN_Freebase_tuned
   model: SeHGNNver2
   n_fp_submetapath_layers: 2
@@ -221,7 +213,6 @@ SeHGNNver2_DBLP_tuned: &SeHGNNver2_DBLP_tuned
   submetapath_hops: 3
   sampling_limit: 10
 
-
 SeHGNNver2_ACM_tuned: &SeHGNNver2_ACM_tuned
   <<: *SeHGNNver2_ACM
   submetapath_hops: 4
@@ -233,13 +224,12 @@ SeHGNNver2_IMDB_tuned: &SeHGNNver2_IMDB_tuned
   submetapath_hops: 4
   sampling_limit: 15
 
-
 #debag
 debag:
  <<: *SeHGNNver2_ACM_tuned
- neighbor_aggr_mode: use_submetapath_for_semantic_fusion
+ neighbor_aggr_mode: all_ver2
 #  model_name: SeHGNN
-#  submetapath_feature_weight: 0.3
+ submetapath_feature_weight: 0.4
  label_feats: True
 #  n_fp_submetapath_layers: 2
  act: none
@@ -247,9 +237,9 @@ debag:
  epochs: 50
  num_label_hops: 2
  num_hop: 2
- submetapath_hops: 2
+ submetapath_hops: 2 
  sub_metapth_act: leaky_relu
- submetapath_attention: True
+ calc_type: False
 
 
 defaults:
