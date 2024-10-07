@@ -161,48 +161,48 @@ SeHGNN_Freebase_tuned: &SeHGNN_Freebase_tuned
 SeHGNNver2_DBLP: &SeHGNNver2_DBLP
   <<: *SeHGNN_DBLP_tuned
   model: SeHGNNver2
-  n_fp_submetapath_layers: 2
   submetapath_hops: 4
   submetapath_feature_weight: 0.2
   sampling_limit: 10
   sub_metapth_act: leaky_relu
   calc_type: attention
   neighbor_aggr_mode: all
+  neighbor_encoder: mean
   path: DBLP_checkpoint.pt
 
 SeHGNNver2_ACM: &SeHGNNver2_ACM
   <<: *SeHGNN_ACM_tuned
   model: SeHGNNver2
-  n_fp_submetapath_layers: 2
   submetapath_hops: 4
   submetapath_feature_weight: 0.2
   sampling_limit: 8
   sub_metapth_act: leaky_relu
   calc_type: attention
   neighbor_aggr_mode: all
+  neighbor_encoder: mean
   path: ACM_checkpoint.pt
 
 SeHGNNver2_IMDB: &SeHGNNver2_IMDB
   <<: *SeHGNN_IMDB_tuned
   model: SeHGNNver2
-  n_fp_submetapath_layers: 2
   submetapath_hops: 3
   submetapath_feature_weight: 0.2
   sampling_limit: 5
   sub_metapth_act: leaky_relu
   calc_type: attention
   neighbor_aggr_mode: all
+  neighbor_encoder: mean
   path: IMDB_checkpoint.pt
 
 SeHGNNver2_Freebase: &SeHGNNver2_Freebase
   <<: *SeHGNN_Freebase_tuned
   model: SeHGNNver2
-  n_fp_submetapath_layers: 2
   lr: 0.0003
   submetapath_feature_weight: 0.2
   weight_decay: 0.0001
   sub_metapth_act: leaky_relu
   neighbor_aggr_mode: all
+  neighbor_encoder: mean
   path: Freebase_checkpoint.pt
 
 # -------model instance (our study (exist tuned setting))-------
@@ -215,8 +215,8 @@ SeHGNNver2_DBLP_tuned: &SeHGNNver2_DBLP_tuned
   submetapath_feature_weight: 0.2
   sampling_limit: 15
   label_feats: True
-  run: 5
-
+  neighbor_encoder: mean
+  run: 5    
 
 SeHGNNver2_ACM_tuned: &SeHGNNver2_ACM_tuned
   <<: *SeHGNNver2_ACM
@@ -236,7 +236,6 @@ debag:
 #  model_name: SeHGNN
  submetapath_feature_weight: 0.4
  label_feats: True
-#  n_fp_submetapath_layers: 2
  act: none
  run: 5
  epochs: 50

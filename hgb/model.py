@@ -85,10 +85,11 @@ class PreProcessing(nn.Module):
                     #Neighbor_Aggr の計算部分にあたる
                     #------（Neighbor Aggregation）----
                     concatenated_features = F.embedding(torch.tensor(indices_list),all_features).view(len(indices_list),-1)
-                    # calc_metapath_insntance_feature_per_metapath = torch.mean(concatenated_features,dim=0)
-                    #------（Neighbor Aggregation）----
-                    # neighbor_aggr_feature_per_metapath[node_id][metapath_key] = calc_metapath_insntance_feature_per_metapath
-                    neighbor_aggr_feature_per_metapath[node_id][metapath_key] = concatenated_features
+                    if self.cfg["neighbor_encoder"] == "mean":
+                        calc_metapath_insntance_feature_per_metapath = torch.mean(concatenated_features,dim=0)
+                        neighbor_aggr_feature_per_metapath[node_id][metapath_key] = calc_metapath_insntance_feature_per_metapath
+                    else: # neighbor_encoder == "sum"
+                        neighbor_aggr_feature_per_metapath[node_id][metapath_key] = concatenated_features
 
             
             # # 結果を表示（neighbor_aggr_feature_per_metapath）
@@ -407,20 +408,19 @@ class SubMetapathAggr(nn.Module):
         self.ntype_num_node = {k:v.shape[0] for k,v in ntype_feature.items()}
         self.data_size = {k:v.shape[1] for k,v in ntype_feature.items()}
         self.metapath_name = metapath_name
-        self.num_heads = 8
         if self.cfg['sub_metapth_act'] == "leaky_relu":
             self.act = torch.nn.LeakyReLU(0.2)
         elif self.cfg['sub_metapth_act'] == "none":
             self.act = lambda x: x
         self.n_lin = nn.Linear(cfg["embed_size"],cfg["embed_size"])
         self.sub_metapath_atten_vector = nn.ParameterDict({})
-        self.input_drop_concat_ver2 = nn.Dropout(cfg["input_drop"])
-        self.embeding_concat_ver2 = nn.ParameterDict({})
+        self.submetapath_input_drop = nn.Dropout(cfg["input_drop"])
+        self.submetapath_embeding = nn.ParameterDict({})
         for ntype,metapaths in metapath_name.items():
-            self.embeding_concat_ver2[ntype] =  nn.Parameter(torch.Tensor(self.ntype_feature[ntype].shape[-1], cfg["embed_size"]))
+            self.submetapath_embeding[ntype] =  nn.Parameter(torch.Tensor(self.ntype_feature[ntype].shape[-1], cfg["embed_size"]))
             for metapath in metapaths:
                 input_dim = [self.ntype_feature[i].shape[-1] for i in metapath]
-                self.embeding_concat_ver2[metapath] =  nn.Parameter(torch.Tensor(sum(input_dim) , cfg["embed_size"]))
+                self.submetapath_embeding[metapath] =  nn.Parameter(torch.Tensor(sum(input_dim) , cfg["embed_size"]))
             self.sub_metapath_atten_vector[ntype] = nn.Parameter(torch.empty(1,cfg["embed_size"]))
         self.reset_parameters()
     def reset_parameters(self):
@@ -517,7 +517,10 @@ class SubMetapathAggr(nn.Module):
         #semantic fusion
         submetapath_emmbedding_feature = []
         for _, metapaths in tqdm(neighbor_aggr_feature_per_metapath.items()):
-            features_per_node = [torch.sum(self.input_drop_concat_ver2(feature.to("cuda") @ self.embeding_concat_ver2[metapath]),dim=0) for metapath,feature in metapaths.items()]
+            if self.cfg["neighbor_encoder"] == "mean":
+                features_per_node = [self.submetapath_input_drop(feature.to("cuda") @ self.submetapath_embeding[metapath]) for metapath,feature in metapaths.items()]
+            else: #self.cfg["neighbor_encoder"] == "sum"
+                features_per_node = [torch.sum(self.submetapath_input_drop(feature.to("cuda") @ self.submetapath_embeding[metapath]),dim=0) for metapath,feature in metapaths.items()]
             semantic_fusion_feature_list_tensor = torch.stack(features_per_node)
             #------（Semantic Fusion）---- 
             if self.cfg['calc_type'] == "attention":
@@ -541,28 +544,6 @@ class SubMetapathAggr(nn.Module):
                 print(f'{key}: {value}')
             
         return feature_dict
-    
-class LinearPerSubMetapath(nn.Module):
-    '''
-        Linear projection per submetapath for feature projection in SeHGNN_ver2.
-    '''
-    def __init__(self, cin, cout):
-        super(LinearPerSubMetapath, self).__init__()
-        self.cin = cin #隠れ層
-        self.cout = cout #出力層
-
-        self.W = nn.Parameter(torch.randn(self.cin, self.cout))
-        self.bias = nn.Parameter(torch.zeros(self.cout))
-
-        self.reset_parameters()
-
-    def reset_parameters(self):
-        gain = nn.init.calculate_gain("relu")
-        xavier_uniform_(self.W, gain=gain)
-        nn.init.zeros_(self.bias)
-
-    def forward(self, x):
-        return x @ self.W + self.bias
 
 def xavier_uniform_(tensor, gain=1.):
     fan_in, fan_out = tensor.size()[-2:]
@@ -788,7 +769,6 @@ class SeHGNNver2(nn.Module):
         elif self.cfg['neighbor_aggr_mode'] == "all_ver3":
             sub_features = [submetapath_feature_dict[sub_key] for sub_key in self.feat_keys]
             alpha_dict = self.sub_metapath_attention_ver2(features,sub_features)
-            # x = [ (alpha_dict[k][0] * features[k]) + (alpha_dict[k][1] * submetapath_feature_dict[k]) for k in self.feat_keys] + [labels[k] for k in self.label_feat_keys]
             x = [  features[k] + (alpha_dict[k] * submetapath_feature_dict[k]) for k in self.feat_keys] + [labels[k] for k in self.label_feat_keys]
         elif self.cfg['neighbor_aggr_mode'] == "use_submetapath_for_semantic_fusion":
             x =  [features[k] for k in self.feat_keys] + [submetapath_feature_dict[k] for k in self.feat_keys] + [labels[k] for k in self.label_feat_keys]
