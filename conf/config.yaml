@@ -209,9 +209,14 @@ SeHGNNver2_Freebase: &SeHGNNver2_Freebase
 #SeHGNN
 SeHGNNver2_DBLP_tuned: &SeHGNNver2_DBLP_tuned
   <<: *SeHGNNver2_DBLP
-  num_hop: 3
-  submetapath_hops: 3
-  sampling_limit: 10
+  neighbor_aggr_mode: all
+  sampling_limit: 15
+  submetapath_hops: 4
+  submetapath_feature_weight: 0.2
+  sampling_limit: 15
+  label_feats: True
+  run: 5
+
 
 SeHGNNver2_ACM_tuned: &SeHGNNver2_ACM_tuned
   <<: *SeHGNNver2_ACM
