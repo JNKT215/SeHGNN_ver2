@@ -57,6 +57,7 @@ SeHGNN: &SeHGNN
   epochs: 50
   num_hop: 2
   run: 5
+  gpu_id: 0
 
 # -------model instance + dataset-------
 SeHGNN_DBLP: &SeHGNN_DBLP

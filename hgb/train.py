@@ -165,7 +165,7 @@ def get_final_score(cfg,data,best_pred,full_loader,model,checkpt_file,labels,dev
     print(checkpt_file.split('/')[-1])
     
     del model
-    if device=="cuda": torch.cuda.empty_cache()
+    if device==f'cuda:{cfg.gpu_id}': torch.cuda.empty_cache()
     
     return train_acc,val_acc,test_acc
 
@@ -187,17 +187,17 @@ def run(cfg,model, data,optimizer,loader,device,scalar=None):
         
     for epoch in tqdm(range(cfg['epochs'])):
         gc.collect()
-        if device == 'cuda': torch.cuda.synchronize()
+        if device == f'cuda:{cfg.gpu_id}': torch.cuda.synchronize()
         start = time.time()
         loss, acc, submetapath_feats = train(model, data.feats, data.label_feats,data.neighbor_aggr_feature_per_metapath,labels_cuda, loss_fcn, optimizer, train_loader, evaluator,scalar=scalar)
-        if device == 'cuda': torch.cuda.synchronize()
+        if device == f'cuda:{cfg.gpu_id}': torch.cuda.synchronize()
         end = time.time()
         
         log = f'Epoch {epoch}, training Time(s): {end-start:.4f}, estimated train loss {loss:.4f}, acc {acc[0]*100:.4f}, {acc[1]*100:.4f}\n'
         train_epoch_records.append(epoch)
         train_loss_records.append(loss)
         train_time_records.append(end-start) if epoch == 0 else train_time_records.append(train_time_records[epoch-1] +(end - start) )
-        if device == "cuda": torch.cuda.empty_cache()
+        if device == f'cuda:{cfg.gpu_id}': torch.cuda.empty_cache()
         train_times.append(end-start)
 
         start = time.time()
@@ -248,7 +248,7 @@ def main(cfg):
         mlflow.log_param(key,value)
         
     root = utils.get_original_cwd() + '/data/datasets/' + cfg['dataset']
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    device = torch.device(f'cuda:{cfg.gpu_id}' if torch.cuda.is_available() else 'cpu')
     data = HeteroDataSet(cfg=cfg,root=root)
     preprocessing = PreProcessing(cfg=cfg).to(device)
     data  = preprocessing(data,model_name=cfg["model"])
@@ -268,7 +268,7 @@ def main(cfg):
         train_loader = torch.utils.data.DataLoader(data.train_nid, batch_size=cfg["batch_size"], shuffle=True, drop_last=False)
         eval_loader, full_loader = get_eval_and_full_loader(cfg=cfg,data=data)
         loader = [train_loader,eval_loader,full_loader]
-        if device == "cuda":  torch.cuda.empty_cache()
+        if device == f'cuda:{cfg.gpu_id}':  torch.cuda.empty_cache()
         gc.collect()
         model = return_model(cfg,data).to(device)
         optimizer = torch.optim.Adam(params=model.parameters(), lr=cfg["lr"],weight_decay=cfg['weight_decay'])

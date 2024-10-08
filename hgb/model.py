@@ -469,7 +469,7 @@ class SubMetapathAggr(nn.Module):
         feat_keys = list(self.hetero_g.nodes[self.cfg['tgt_type']].data.keys())
         
         for k in feat_keys:                
-            submetapath_feature_dict[k] = self.hetero_g.nodes[self.cfg['tgt_type']].data.pop(k).to("cuda")
+            submetapath_feature_dict[k] = self.hetero_g.nodes[self.cfg['tgt_type']].data.pop(k).to(f'cuda:{self.cfg.gpu_id}')
         gc.collect()
         
         for ntype,ntype_feature in self.ntype_feature.items():
@@ -530,9 +530,9 @@ class SubMetapathAggr(nn.Module):
         submetapath_emmbedding_feature = []
         for _, metapaths in tqdm(neighbor_aggr_feature_per_metapath.items()):
             if self.cfg["neighbor_encoder"] == "mean":
-                features_per_node = [self.submetapath_input_drop(feature.to("cuda") @ self.submetapath_embeding[metapath]) for metapath,feature in metapaths.items()]
+                features_per_node = [self.submetapath_input_drop(feature.to(f'cuda:{self.cfg.gpu_id}') @ self.submetapath_embeding[metapath]) for metapath,feature in metapaths.items()]
             else: #self.cfg["neighbor_encoder"] == "sum"
-                features_per_node = [torch.sum(self.submetapath_input_drop(feature.to("cuda") @ self.submetapath_embeding[metapath]),dim=0) for metapath,feature in metapaths.items()]
+                features_per_node = [torch.sum(self.submetapath_input_drop(feature.to(f'cuda:{self.cfg.gpu_id}') @ self.submetapath_embeding[metapath]),dim=0) for metapath,feature in metapaths.items()]
             semantic_fusion_feature_list_tensor = torch.stack(features_per_node)
             #------（Semantic Fusion）---- 
             if self.cfg['calc_type'] == "attention":
