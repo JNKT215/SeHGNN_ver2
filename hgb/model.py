@@ -75,16 +75,28 @@ class PreProcessing(nn.Module):
         return etype_graph_dict
         
     def calc_submetapath_neighbor_aggr_feature(self,data,metapath_instance_dict_per_node,echo=False):
-            # all_features  = torch.cat([v for k,v in data.ntype_features.items()],dim=0).clone()
-            all_features  = torch.cat([data.ntype_features[n_type] for n_type in data.node_slices.keys()],dim=0).clone()
+            def concatenate_features(x,metapath_key,homo_to_hetero_index_dict,indices):
+                features = []
+                for cnt,index in enumerate(indices):
+                    node_type = metapath_key[cnt]
+                    feature = x[node_type][homo_to_hetero_index_dict[index]]
+                    features.append(feature)
+                return torch.cat(features)
+                  
+            homo_to_hetero_index_dict,index = {},0
+            for node_type in data.node_dict.keys():
+                for cnt,_ in  enumerate(range(data.node_slices[node_type][0],data.node_slices[node_type][1])):
+                    homo_to_hetero_index_dict[index] = cnt
+                    index+=1
+                    
             # すべてのノードとメタパスインスタンスを処理
             neighbor_aggr_feature_per_metapath = {}
             for node_id, metapaths in tqdm(metapath_instance_dict_per_node.items()):
                 neighbor_aggr_feature_per_metapath[node_id] = {}
                 for metapath_key, indices_list in metapaths.items():
-                    #Neighbor_Aggr の計算部分にあたる
                     #------（Neighbor Aggregation）----
-                    concatenated_features = F.embedding(torch.tensor(indices_list),all_features).view(len(indices_list),-1)
+                    concatenated_features = [concatenate_features(data.ntype_features,metapath_key,homo_to_hetero_index_dict,indices) for indices in indices_list]
+                    concatenated_features = torch.stack(concatenated_features)         
                     if self.cfg["neighbor_encoder"] == "mean":
                         calc_metapath_insntance_feature_per_metapath = torch.mean(concatenated_features,dim=0)
                         neighbor_aggr_feature_per_metapath[node_id][metapath_key] = calc_metapath_insntance_feature_per_metapath

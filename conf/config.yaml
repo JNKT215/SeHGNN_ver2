@@ -213,7 +213,6 @@ SeHGNNver2_DBLP_tuned: &SeHGNNver2_DBLP_tuned
   sampling_limit: 15
   submetapath_hops: 4
   submetapath_feature_weight: 0.2
-  sampling_limit: 15
   label_feats: True
   neighbor_encoder: mean
   run: 5    
@@ -243,7 +242,7 @@ debag:
  num_hop: 2
  submetapath_hops: 2 
  sub_metapth_act: leaky_relu
- calc_type: False
+ calc_type: mean
 
 
 defaults:
