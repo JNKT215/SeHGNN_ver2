@@ -806,7 +806,9 @@ class SeHGNNver2(nn.Module):
         
     def sub_metapath_attention(self,main_feature,sub_feature,q):
         out = torch.stack([main_feature,sub_feature])
-        attn_score = (q * torch.tanh(self.k_lin(out)).mean(1)).sum(-1)
+        # attn_score = (q * torch.tanh(self.k_lin(out)).mean(1)).sum(-1)
+        # attn_score = (q * torch.tanh(self.k_lin(out)).mean(1)).sum(-1)
+        attn_score = (torch.tanh(q * out).mean(1)).sum(-1)
         attn = F.softmax(attn_score, dim=0)
         main_alpha,sub_alpha = attn[0].item(),attn[1].item()
         return main_alpha,sub_alpha
