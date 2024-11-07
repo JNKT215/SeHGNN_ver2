@@ -146,10 +146,10 @@ def get_final_score(cfg,data,best_pred,full_loader,model,checkpt_file,labels,dev
     
     if cfg["dataset"] != 'IMDB':
         pred = test_logits.cpu().numpy().argmax(axis=1)
-        data.dl.gen_file_for_evaluate(test_idx=data.test_nid, label=pred, file_name=f"{cfg.dataset}_{cfg.seeds}_{checkpt_file.split('/')[-1]}.txt")
+        data.dl.gen_file_for_evaluate(test_idx=data.test_nid, label=pred,true_label=labels[data.test_nid],file_name=f"{cfg.dataset}_{cfg.seeds}_{checkpt_file.split('/')[-1]}.txt")
     else:
         pred = (test_logits.cpu().numpy()>0.5).astype(int)
-        data.dl.gen_file_for_evaluate(test_idx=data.test_nid, label=pred, file_name=f"{cfg.dataset}_{cfg.seeds}_{checkpt_file.split('/')[-1]}.txt", mode='multi')
+        data.dl.gen_file_for_evaluate(test_idx=data.test_nid, label=pred,true_label=labels[data.test_nid],file_name=f"{cfg.dataset}_{cfg.seeds}_{checkpt_file.split('/')[-1]}.txt", mode='multi')
 
     if cfg["dataset"] != 'IMDB':
         preds = predict_prob.argmax(dim=1, keepdim=True)
