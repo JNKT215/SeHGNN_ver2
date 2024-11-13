@@ -208,26 +208,113 @@ SeHGNNver2_Freebase: &SeHGNNver2_Freebase
 
 # -------model instance (our study (exist tuned setting))-------
 #SeHGNN
-SeHGNNver2_DBLP_tuned: &SeHGNNver2_DBLP_tuned
+SeHGNNver2_DBLP_tuned_1: &SeHGNNver2_DBLP_tuned_1
   <<: *SeHGNNver2_DBLP
-  neighbor_aggr_mode: all
-  sampling_limit: 15
-  submetapath_hops: 4
-  submetapath_feature_weight: 0.2
-  label_feats: True
+  calc_type: linear
+  dropout: 0.5
+  embed_size: 512
+  input_drop: 0.5
+  lr: 0.001
+  n_fp_layers: 2 
+  n_task_layers: 3 
+  neighbor_aggr_mode: all 
   neighbor_encoder: mean
-  run: 5    
-
-SeHGNNver2_ACM_tuned: &SeHGNNver2_ACM_tuned
-  <<: *SeHGNNver2_ACM
-  submetapath_hops: 4
-  submetapath_feature_weight: 0.4
-  sampling_limit: 20 
-
-SeHGNNver2_IMDB_tuned: &SeHGNNver2_IMDB_tuned 
-  <<: *SeHGNNver2_IMDB 
-  submetapath_hops: 4
+  num_hop: 2
+  num_label_hops: 4
   sampling_limit: 15
+  submetapath_feature_weight: 0.2
+  submetapath_hops: 4
+  weight_decay: 0
+
+SeHGNNver2_DBLP_tuned_3: &SeHGNNver2_DBLP_tuned_3
+  <<: *SeHGNNver2_DBLP
+  calc_type: mean
+  dropout: 0.5
+  embed_size: 512
+  input_drop: 0.5
+  lr: 0.001
+  n_fp_layers: 2 
+  n_task_layers: 3 
+  neighbor_aggr_mode: use_submetapath_for_semantic_fusion
+  neighbor_encoder: mean
+  num_hop: 2
+  num_label_hops: 4
+  sampling_limit: 15 
+  submetapath_hops: 4
+  weight_decay: 0
+
+SeHGNNver2_IMDB_tuned_1: &SeHGNNver2_IMDB_tuned_1 
+  <<: *SeHGNNver2_IMDB 
+  calc_type: mean
+  dropout: 0.2
+  embed_size: 512
+  input_drop: 0
+  lr: 0.001
+  n_fp_layers: 2
+  n_task_layers: 1
+  neighbor_aggr_mode: all
+  neighbor_encoder: mean
+  num_hop: 4
+  num_label_hops: 4
+  sampling_limit: 10
+  submetapath_feature_weight: 0.2
+  submetapath_hops: 2
+  weight_decay: 0
+
+SeHGNNver2_IMDB_tuned_3: &SeHGNNver2_IMDB_tuned_3 
+  <<: *SeHGNNver2_IMDB 
+  calc_type: mean
+  dropout: 0.5
+  embed_size: 512
+  input_drop: 0.0
+  lr: 0.001
+  n_fp_layers: 2 
+  n_task_layers: 4 
+  neighbor_aggr_mode: use_submetapath_for_semantic_fusion
+  neighbor_encoder: mean
+  num_hop: 4
+  num_label_hops: 4
+  sampling_limit: 10 
+  submetapath_hops: 2
+  weight_decay: 0
+
+
+
+SeHGNNver2_ACM_tuned_1: &SeHGNNver2_ACM_tuned_1
+  <<: *SeHGNNver2_ACM
+  calc_type: linear
+  dropout: 0.5
+  embed_size: 256
+  input_drop: 0.8
+  lr: 0.001
+  n_fp_layers: 2 
+  n_task_layers: 2 
+  neighbor_aggr_mode: all
+  neighbor_encoder: mean 
+  num_hop: 4
+  num_label_hops: 4
+  sampling_limit: 15
+  submetapath_feature_weight: 0.2
+  submetapath_hops: 2
+  weight_decay: 0.0001
+
+SeHGNNver2_ACM_tuned_3: &SeHGNNver2_ACM_tuned_3
+  <<: *SeHGNNver2_ACM
+  calc_type: mean
+  dropout: 0.8
+  embed_size: 512
+  input_drop: 0.2
+  lr: 0.001
+  n_fp_layers: 2 
+  n_task_layers: 1 
+  neighbor_aggr_mode: use_submetapath_for_semantic_fusion
+  neighbor_encoder: mean
+  num_hop: 4
+  num_label_hops: 4 
+  sampling_limit: 15 
+  submetapath_hops: 2
+  weight_decay: 0.0001
+
 
 #debag
 debag:
