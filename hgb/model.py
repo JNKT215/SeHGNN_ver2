@@ -668,7 +668,7 @@ class SeHGNNver2(nn.Module):
             self.metapath_lins[k] = nn.Linear(cfg["embed_size"], cfg["hidden"])
         self.q = nn.Parameter(torch.empty(1, cfg["hidden"] * (len(self.feat_keys) + 1 )))
         # self.k_lin = nn.Linear(cfg["hidden"] * (len(self.feat_keys) + 1 ),cfg["hidden"] * (len(self.feat_keys) + 1 ))
-        self.k_lin = nn.Linear(cfg["hidden"], cfg["hidden"])
+        self.k_lin = nn.Linear(cfg["embed_size"], cfg["hidden"])
         
         self.data_size = data.data_size
         self.embeding = nn.ParameterDict({})
@@ -775,7 +775,7 @@ class SeHGNNver2(nn.Module):
         elif self.cfg['neighbor_aggr_mode'] == "all":
             alpha = self.cfg['submetapath_feature_weight']
             x = [ ((1-alpha) * features[k]) + (alpha * submetapath_feature_dict[k]) for k in self.feat_keys] + [labels[k] for k in self.label_feat_keys]
-        elif self.cfg['neighbor_aggr_mode'] == "all_ver2":
+        elif self.cfg['neighbor_aggr_mode'] == "attention":
             alpha_dict = {key:self.sub_metapath_attention(features[key],submetapath_feature_dict[key],self.sub_metapath_alpha_q[key]) for key in self.feat_keys}
             x = [ (alpha_dict[k][0] * features[k]) + (alpha_dict[k][1] * submetapath_feature_dict[k]) for k in self.feat_keys] + [labels[k] for k in self.label_feat_keys]
         elif self.cfg['neighbor_aggr_mode'] == "all_ver3":
@@ -806,9 +806,7 @@ class SeHGNNver2(nn.Module):
         
     def sub_metapath_attention(self,main_feature,sub_feature,q):
         out = torch.stack([main_feature,sub_feature])
-        # attn_score = (q * torch.tanh(self.k_lin(out)).mean(1)).sum(-1)
-        # attn_score = (q * torch.tanh(self.k_lin(out)).mean(1)).sum(-1)
-        attn_score = (torch.tanh(q * out).mean(1)).sum(-1)
+        attn_score = (q * torch.tanh(self.k_lin(out)).mean(1)).sum(-1)
         attn = F.softmax(attn_score, dim=0)
         main_alpha,sub_alpha = attn[0].item(),attn[1].item()
         return main_alpha,sub_alpha

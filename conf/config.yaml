@@ -1,5 +1,6 @@
 key: debag
 experiment_name: debag
+tracking_uri: http://127.0.0.1:5000
 
 ## -------datasets (HeteroGraph)----
 HeteroGraph: &HeteroGraph
@@ -318,8 +319,8 @@ SeHGNNver2_ACM_tuned_3: &SeHGNNver2_ACM_tuned_3
 
 #debag
 debag:
- <<: *SeHGNNver2_ACM_tuned
- neighbor_aggr_mode: all_ver2
+ <<: *SeHGNNver2_ACM_tuned_1
+ neighbor_aggr_mode: attention
 #  model_name: SeHGNN
  submetapath_feature_weight: 0.4
  label_feats: True

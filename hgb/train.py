@@ -239,7 +239,7 @@ def run(cfg,model, data,optimizer,loader,device,scalar=None):
 def main(cfg):
 
     print(utils.get_original_cwd())
-    mlflow.set_tracking_uri('http://127.0.0.1:5000')
+    mlflow.set_tracking_uri(cfg.tracking_uri)
     mlflow.set_experiment(cfg.experiment_name)
     mlflow.start_run()
     
