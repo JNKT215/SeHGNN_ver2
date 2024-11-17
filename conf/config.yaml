@@ -60,6 +60,18 @@ SeHGNN: &SeHGNN
   run: 5
   gpu_id: 0
 
+SeHGNNver2: &SeHGNNver2
+  model: SeHGNNver2
+  submetapath_hops: 4
+  submetapath_feature_weight: 0.2
+  sampling_limit: 10
+  neighbor_aggr_calc: basic
+  sub_metapth_act: leaky_relu
+  calc_type: attention
+  neighbor_aggr_mode: all
+  neighbor_encoder: mean
+  path: DBLP_checkpoint.pt
+
 # -------model instance + dataset-------
 SeHGNN_DBLP: &SeHGNN_DBLP
   <<: [*DBLP,*SeHGNN]
@@ -161,7 +173,7 @@ SeHGNN_Freebase_tuned: &SeHGNN_Freebase_tuned
 # -------model instance (our study)-------
 #SeHGNN
 SeHGNNver2_DBLP: &SeHGNNver2_DBLP
-  <<: *SeHGNN_DBLP_tuned
+  <<: [*SeHGNN_DBLP_tuned,*SeHGNNver2]
   model: SeHGNNver2
   submetapath_hops: 4
   submetapath_feature_weight: 0.2
@@ -173,7 +185,7 @@ SeHGNNver2_DBLP: &SeHGNNver2_DBLP
   path: DBLP_checkpoint.pt
 
 SeHGNNver2_ACM: &SeHGNNver2_ACM
-  <<: *SeHGNN_ACM_tuned
+  <<: [*SeHGNN_ACM_tuned,*SeHGNNver2]
   model: SeHGNNver2
   submetapath_hops: 4
   submetapath_feature_weight: 0.2
@@ -185,7 +197,7 @@ SeHGNNver2_ACM: &SeHGNNver2_ACM
   path: ACM_checkpoint.pt
 
 SeHGNNver2_IMDB: &SeHGNNver2_IMDB
-  <<: *SeHGNN_IMDB_tuned
+  <<: [*SeHGNN_IMDB_tuned,*SeHGNNver2]
   model: SeHGNNver2
   submetapath_hops: 3
   submetapath_feature_weight: 0.2
@@ -197,7 +209,7 @@ SeHGNNver2_IMDB: &SeHGNNver2_IMDB
   path: IMDB_checkpoint.pt
 
 SeHGNNver2_Freebase: &SeHGNNver2_Freebase
-  <<: *SeHGNN_Freebase_tuned
+  <<: [*SeHGNN_Freebase_tuned,*SeHGNNver2]
   model: SeHGNNver2
   lr: 0.0003
   submetapath_feature_weight: 0.2
@@ -211,6 +223,7 @@ SeHGNNver2_Freebase: &SeHGNNver2_Freebase
 #SeHGNN
 SeHGNNver2_DBLP_tuned_1: &SeHGNNver2_DBLP_tuned_1
   <<: *SeHGNNver2_DBLP
+  neighbor_aggr_calc: new
   calc_type: linear
   dropout: 0.5
   embed_size: 512
@@ -229,6 +242,7 @@ SeHGNNver2_DBLP_tuned_1: &SeHGNNver2_DBLP_tuned_1
 
 SeHGNNver2_DBLP_tuned_3: &SeHGNNver2_DBLP_tuned_3
   <<: *SeHGNNver2_DBLP
+  neighbor_aggr_calc: new
   calc_type: mean
   dropout: 0.5
   embed_size: 512
@@ -246,6 +260,7 @@ SeHGNNver2_DBLP_tuned_3: &SeHGNNver2_DBLP_tuned_3
 
 SeHGNNver2_IMDB_tuned_1: &SeHGNNver2_IMDB_tuned_1 
   <<: *SeHGNNver2_IMDB 
+  neighbor_aggr_calc: new
   calc_type: mean
   dropout: 0.2
   embed_size: 512
@@ -264,6 +279,7 @@ SeHGNNver2_IMDB_tuned_1: &SeHGNNver2_IMDB_tuned_1
 
 SeHGNNver2_IMDB_tuned_3: &SeHGNNver2_IMDB_tuned_3 
   <<: *SeHGNNver2_IMDB 
+  neighbor_aggr_calc: new
   calc_type: mean
   dropout: 0.5
   embed_size: 512
@@ -283,6 +299,7 @@ SeHGNNver2_IMDB_tuned_3: &SeHGNNver2_IMDB_tuned_3
 
 SeHGNNver2_ACM_tuned_1: &SeHGNNver2_ACM_tuned_1
   <<: *SeHGNNver2_ACM
+  neighbor_aggr_calc: new
   calc_type: linear
   dropout: 0.5
   embed_size: 256
@@ -301,6 +318,7 @@ SeHGNNver2_ACM_tuned_1: &SeHGNNver2_ACM_tuned_1
 
 SeHGNNver2_ACM_tuned_3: &SeHGNNver2_ACM_tuned_3
   <<: *SeHGNNver2_ACM
+  neighbor_aggr_calc: new
   calc_type: mean
   dropout: 0.8
   embed_size: 512
@@ -319,19 +337,21 @@ SeHGNNver2_ACM_tuned_3: &SeHGNNver2_ACM_tuned_3
 
 #debag
 debag:
- <<: *SeHGNNver2_ACM_tuned_1
- neighbor_aggr_mode: attention
-#  model_name: SeHGNN
- submetapath_feature_weight: 0.4
- label_feats: True
- act: none
- run: 5
- epochs: 50
- num_label_hops: 2
- num_hop: 2
- submetapath_hops: 2 
- sub_metapth_act: leaky_relu
- calc_type: mean
+ <<: *SeHGNNver2_IMDB_tuned_1
+ neighbor_aggr_mode: all
+ neighbor_aggr_calc: basic
+#  neighbor_aggr_mode: attention
+# #  model_name: SeHGNN
+#  submetapath_feature_weight: 0.4
+#  label_feats: True
+#  act: none
+#  run: 5
+#  epochs: 50
+#  num_label_hops: 2
+#  num_hop: 2
+#  submetapath_hops: 2 
+#  sub_metapth_act: leaky_relu
+#  calc_type: mean
 
 
 defaults:
