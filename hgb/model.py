@@ -26,27 +26,44 @@ class PreProcessing(nn.Module):
         gc.collect()
                 
         if model_name == "SeHGNNver2":
-            # compute submetapth semantic fusion tensor
-            print("etype_graph_dict")
-            etype_graph_dict = self.get_etype_graph_dict(data)
+            if self.cfg['neighbor_aggr_calc'] == "basic":
+                g = self.hg_propagate_feat_dgl(g=data.g.clone(),num_hops=int(self.cfg['submetapath_hops']),max_length=int(self.cfg['submetapath_hops'])+1,echo=True,tgt_type_metapath_aggr=False)
+                
+                submetapath_raw_feats,keys = {},[]
+                
+                for n_type in data.ntype_features.keys():
+                    keys += list(g.nodes[n_type].data.keys())
 
-            max_length = int(self.cfg['submetapath_hops']) + 1 
-            metapath_name = mp.enum_metapath_name(data.edge_type,data.next_type,max_length)
-            metapath_list = mp.enum_longest_metapath_index(data.edge_type,data.next_type,max_length)
-            
-            print("metapath_instance_dict_per_node")    
-            metapath_instance_dict_per_node = {}
-            for index in tqdm(range(data.total_nodes)):    
-                tmp = mp.search_all_path(etype_graph_dict, index, metapath_name, metapath_list, data.edge_type,self.cfg["sampling_limit"])          
-                metapath_instance_dict_per_node[index] = tmp   
+                for k in keys:
+                    submetapath_raw_feats[k] = g.nodes[k[0]].data.pop(k)
+                
+                metapath_name = mp.enum_metapath_name(data.edge_type,data.next_type,self.cfg['submetapath_hops']+1)
+                
+                raw_feats = {metapath:data.raw_feats[metapath].clone() for metapath in [self.cfg.tgt_type] + list(metapath_name[self.cfg.tgt_type])}
+                data.neighbor_aggr_feature_per_metapath = dict(**raw_feats,**{k:v.clone() for k,v in submetapath_raw_feats.items()})
+                
+            elif self.cfg['neighbor_aggr_calc'] == "new":         
+                # compute submetapth semantic fusion tensor
+                print("etype_graph_dict")
+                etype_graph_dict = self.get_etype_graph_dict(data)
+
+                max_length = int(self.cfg['submetapath_hops']) + 1 
+                metapath_name = mp.enum_metapath_name(data.edge_type,data.next_type,max_length)
+                metapath_list = mp.enum_longest_metapath_index(data.edge_type,data.next_type,max_length)
+                
+                print("metapath_instance_dict_per_node")    
+                metapath_instance_dict_per_node = {}
+                for index in tqdm(range(data.total_nodes)):    
+                    tmp = mp.search_all_path(etype_graph_dict, index, metapath_name, metapath_list, data.edge_type,self.cfg["sampling_limit"])          
+                    metapath_instance_dict_per_node[index] = tmp   
+                            
+                print("neighbor_aggr_feature_per_metapath")
+                neighbor_aggr_feature_per_metapath = self.calc_submetapath_neighbor_aggr_feature(data,metapath_instance_dict_per_node,echo=False)
+                
+                data.neighbor_aggr_feature_per_metapath = neighbor_aggr_feature_per_metapath
                         
-            print("neighbor_aggr_feature_per_metapath")
-            neighbor_aggr_feature_per_metapath = self.calc_submetapath_neighbor_aggr_feature(data,metapath_instance_dict_per_node,echo=False)
-            
-            data.neighbor_aggr_feature_per_metapath = neighbor_aggr_feature_per_metapath
-            
         return data
-    
+        
     def get_etype_graph_dict(self,data):
         etype_graph_dict = {}
         for e_type_index,e_type in data.edge_type.items():
@@ -113,7 +130,7 @@ class PreProcessing(nn.Module):
                         print(f"    Features: {features}")
             return neighbor_aggr_feature_per_metapath
     
-    def hg_propagate_feat_dgl(self, g, tgt_type, num_hops, max_length, extra_metapath, echo=False):
+    def hg_propagate_feat_dgl(self,g,num_hops, max_length, extra_metapath=[], echo=False,tgt_type_metapath_aggr=True):
         for hop in range(1, max_length):
             reserve_heads = [ele[:hop] for ele in extra_metapath if len(ele) > hop]
             for etype in g.etypes:
@@ -122,9 +139,15 @@ class PreProcessing(nn.Module):
                 for k in list(g.nodes[stype].data.keys()):
                     if len(k) == hop:
                         current_dst_name = f'{dtype}{k}'
-                        if (hop == num_hops and dtype != tgt_type and k not in reserve_heads) \
-                        or (hop > num_hops and k not in reserve_heads):
-                            continue
+                        if tgt_type_metapath_aggr:
+                            if (hop == num_hops and dtype != self.cfg["tgt_type"] and k not in reserve_heads) \
+                            or (hop > num_hops and k not in reserve_heads):
+                                continue
+                        else:
+                            if (hop == num_hops and dtype == self.cfg["tgt_type"] and k not in reserve_heads) \
+                            or (hop > num_hops and k not in reserve_heads):
+                                continue
+                            
                         if echo: print(k, etype, current_dst_name)
                         g[etype].update_all(
                             fn.copy_u(k, 'm'),
@@ -132,7 +155,10 @@ class PreProcessing(nn.Module):
 
             # remove no-use items
             for ntype in g.ntypes:
-                if ntype == tgt_type: continue
+                if tgt_type_metapath_aggr:
+                    if ntype == self.cfg['tgt_type']: continue
+                else:
+                    if ntype != self.cfg['tgt_type']: continue
                 removes = []
                 for k in g.nodes[ntype].data.keys():
                     if len(k) <= hop:
@@ -145,9 +171,10 @@ class PreProcessing(nn.Module):
             if echo: print(f'-- hop={hop} ---')
             for ntype in g.ntypes:
                 for k, v in g.nodes[ntype].data.items():
-                    print(f'{ntype} {k} {v.shape}', v[:,-1].max(), v[:,-1].mean())
+                     if echo: print(f'{ntype} {k} {v.shape}', v[:,-1].max(), v[:,-1].mean())
             if echo: print(f'------\n')
         return g
+
 
 
     def hg_propagate_sparse_pyg(self, adjs, tgt_types, num_hops, max_length, extra_metapath, prop_feats=False, echo=False, prop_device='cpu'):
@@ -210,7 +237,7 @@ class PreProcessing(nn.Module):
                 max_length = self.cfg['num_hop'] + 1
 
             ### gが常に初期の状態となっているかどうかを確認##
-            g = self.hg_propagate_feat_dgl(data.g, data.tgt_type, self.cfg['num_hop'], max_length, data.extra_metapath, echo=True)
+            g = self.hg_propagate_feat_dgl(g=data.g.clone(),num_hops=self.cfg['num_hop'],max_length=max_length,extra_metapath=data.extra_metapath,echo=True,tgt_type_metapath_aggr=True)
             
             raw_feats = {}
             keys = list(g.nodes[data.tgt_type].data.keys())
@@ -428,12 +455,19 @@ class SubMetapathAggr(nn.Module):
         self.sub_metapath_atten_vector = nn.ParameterDict({})
         self.submetapath_input_drop = nn.Dropout(cfg["input_drop"])
         self.submetapath_embeding = nn.ParameterDict({})
-        for ntype,metapaths in metapath_name.items():
-            self.submetapath_embeding[ntype] =  nn.Parameter(torch.Tensor(self.ntype_feature[ntype].shape[-1], cfg["embed_size"]))
-            for metapath in metapaths:
-                input_dim = [self.ntype_feature[i].shape[-1] for i in metapath]
-                self.submetapath_embeding[metapath] =  nn.Parameter(torch.Tensor(sum(input_dim) , cfg["embed_size"]))
-            self.sub_metapath_atten_vector[ntype] = nn.Parameter(torch.empty(1,cfg["embed_size"]))
+        
+        if self.cfg['neighbor_aggr_calc'] == "basic":
+            for ntype,metapaths in metapath_name.items():
+                self.submetapath_embeding[ntype] =  nn.Parameter(torch.Tensor(self.ntype_feature[ntype].shape[-1], cfg["embed_size"]))
+                for metapath in metapaths:
+                    self.submetapath_embeding[metapath] =  nn.Parameter(torch.Tensor(self.ntype_feature[metapath[-1]].shape[-1], cfg["embed_size"]))
+        elif self.cfg['neighbor_aggr_calc'] == "new":
+            for ntype,metapaths in metapath_name.items():
+                self.submetapath_embeding[ntype] =  nn.Parameter(torch.Tensor(self.ntype_feature[ntype].shape[-1], cfg["embed_size"]))
+                for metapath in metapaths:
+                    input_dim = [self.ntype_feature[i].shape[-1] for i in metapath]
+                    self.submetapath_embeding[metapath] =  nn.Parameter(torch.Tensor(sum(input_dim) , cfg["embed_size"]))
+                self.sub_metapath_atten_vector[ntype] = nn.Parameter(torch.empty(1,cfg["embed_size"]))
         self.reset_parameters()
     def reset_parameters(self):
         for k, v in self._modules.items():
@@ -526,31 +560,40 @@ class SubMetapathAggr(nn.Module):
         #ノードタイプに対応する，metapath の semantics を fusion する．最終的な出力としては，sub_metapath による表現を持たせることとする
       
     def calc_submetapath_semantic_fusion_feature(self,neighbor_aggr_feature_per_metapath,node_slices,echo=False):
-        #semantic fusion
-        submetapath_emmbedding_feature = []
-        for _, metapaths in tqdm(neighbor_aggr_feature_per_metapath.items()):
-            if self.cfg["neighbor_encoder"] == "mean":
-                features_per_node = [self.submetapath_input_drop(feature.to(f'cuda:{self.cfg.gpu_id}') @ self.submetapath_embeding[metapath]) for metapath,feature in metapaths.items()]
-            else: #self.cfg["neighbor_encoder"] == "sum"
-                features_per_node = [torch.sum(self.submetapath_input_drop(feature.to(f'cuda:{self.cfg.gpu_id}') @ self.submetapath_embeding[metapath]),dim=0) for metapath,feature in metapaths.items()]
-            semantic_fusion_feature_list_tensor = torch.stack(features_per_node)
-            #------（Semantic Fusion）---- 
-            if self.cfg['calc_type'] == "attention":
-                target_type = list(metapaths.keys())[0]
-                attn_score = self.act((self.sub_metapath_atten_vector[target_type] * torch.tanh(semantic_fusion_feature_list_tensor)).sum(-1))
-                attn = F.softmax(attn_score, dim=0)
-                semantic_fusion_feature = torch.sum(attn.view(len(metapaths),  -1) * semantic_fusion_feature_list_tensor, dim=0)
-            elif self.cfg['calc_type'] == "mean": # mean
-                semantic_fusion_feature = torch.mean(semantic_fusion_feature_list_tensor,dim=0)
-            elif self.cfg['calc_type'] == "linear": # mean
-                semantic_fusion_feature = torch.mean(semantic_fusion_feature_list_tensor,dim=0)
-                semantic_fusion_feature = self.n_lin(semantic_fusion_feature)
-            submetapath_emmbedding_feature.append(semantic_fusion_feature)  
-            #------（Semantic Fusion）----
-          
-        submetapath_emmbedding_feature = torch.stack(submetapath_emmbedding_feature)
-        feature_dict = {k:submetapath_emmbedding_feature[v[0]:v[1],:] for k,v in node_slices.items()}
-        # 出力する
+        
+        if self.cfg['neighbor_aggr_calc'] == "basic":
+            submetapath_features = {k:self.submetapath_input_drop(v.clone().to(f'cuda:{self.cfg.gpu_id}') @ self.submetapath_embeding[k]) for k,v in neighbor_aggr_feature_per_metapath.items()}
+            feature_dict = {}
+            for n_type in self.ntypes:
+                semantic_fusion_feature_list_tensor = [submetapath_features[n_type]] + [submetapath_features[i] for i in self.metapath_name[n_type]]
+                semantic_fusion_feature = torch.stack(semantic_fusion_feature_list_tensor)
+                feature_dict[n_type] = torch.mean(semantic_fusion_feature,dim=0)
+        elif self.cfg['neighbor_aggr_calc'] == "new":
+            #semantic fusion
+            submetapath_emmbedding_feature = []
+            for _, metapaths in tqdm(neighbor_aggr_feature_per_metapath.items()):
+                if self.cfg["neighbor_encoder"] == "mean":
+                    features_per_node = [self.submetapath_input_drop(feature.to(f'cuda:{self.cfg.gpu_id}') @ self.submetapath_embeding[metapath]) for metapath,feature in metapaths.items()]
+                else: #self.cfg["neighbor_encoder"] == "sum"
+                    features_per_node = [torch.sum(self.submetapath_input_drop(feature.to(f'cuda:{self.cfg.gpu_id}') @ self.submetapath_embeding[metapath]),dim=0) for metapath,feature in metapaths.items()]
+                semantic_fusion_feature_list_tensor = torch.stack(features_per_node)
+                #------（Semantic Fusion）---- 
+                if self.cfg['calc_type'] == "attention":
+                    target_type = list(metapaths.keys())[0]
+                    attn_score = self.act((self.sub_metapath_atten_vector[target_type] * torch.tanh(semantic_fusion_feature_list_tensor)).sum(-1))
+                    attn = F.softmax(attn_score, dim=0)
+                    semantic_fusion_feature = torch.sum(attn.view(len(metapaths),  -1) * semantic_fusion_feature_list_tensor, dim=0)
+                elif self.cfg['calc_type'] == "mean": # mean
+                    semantic_fusion_feature = torch.mean(semantic_fusion_feature_list_tensor,dim=0)
+                elif self.cfg['calc_type'] == "linear": # mean
+                    semantic_fusion_feature = torch.mean(semantic_fusion_feature_list_tensor,dim=0)
+                    semantic_fusion_feature = self.n_lin(semantic_fusion_feature)
+                submetapath_emmbedding_feature.append(semantic_fusion_feature)  
+                #------（Semantic Fusion）----
+            
+            submetapath_emmbedding_feature = torch.stack(submetapath_emmbedding_feature)
+            feature_dict = {k:submetapath_emmbedding_feature[v[0]:v[1],:] for k,v in node_slices.items()}
+            
         if echo:
             for key, value in feature_dict.items():
                 print(f'{key}: {value}')
