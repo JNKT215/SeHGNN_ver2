@@ -258,6 +258,7 @@ def main(cfg):
     for i in tqdm(range(cfg['run'])):
         print('Restart with seed =', i+1)
         set_random_seed(seed=i+1)
+        cfg.seeds = i+1
         set_checkpt_folder(cfg)
         data.get_training_setup()
         # clone raw_feats to avoid in-place modification for different seeds
@@ -291,11 +292,13 @@ def main(cfg):
     mlflow.log_metric('test_acc_micro_min',min(test_accs_micro))
     mlflow.log_metric('test_acc_micro_mean',test_acc_micro_ave)
     mlflow.log_metric('test_acc_micro_max',max(test_accs_micro))
+    mlflow.log_metric('test_acc_micro_max_seed',test_accs_micro.index(max(test_accs_micro))+1)
     
     #f1_score(macro)
     mlflow.log_metric('test_acc_macro_min',min(test_accs_macro))
     mlflow.log_metric('test_acc_macro_mean',test_acc_macro_ave)
     mlflow.log_metric('test_acc_macro_max',max(test_accs_macro))
+    mlflow.log_metric('test_acc_macro_max_seed',test_accs_macro.index(max(test_accs_macro))+1)
     mlflow.end_run()
     return test_acc_micro_ave
 
