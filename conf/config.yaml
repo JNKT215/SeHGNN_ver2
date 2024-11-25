@@ -376,6 +376,9 @@ SeHGNNver2_ACM_tuned_basic_alpha_auto: &SeHGNNver2_ACM_tuned_basic_alpha_auto
 SeHGNNver2_ACM_tuned_basic_transformer: &SeHGNNver2_ACM_tuned_basic_transformer
   <<: *SeHGNNver2_ACM
   neighbor_aggr_calc: basic
+  label_feats: True
+  residual: True
+  amp: True
   dropout: 0.8
   embed_size: 512
   hidden: 1024
@@ -383,13 +386,39 @@ SeHGNNver2_ACM_tuned_basic_transformer: &SeHGNNver2_ACM_tuned_basic_transformer
   att_drop: 0
   act: leaky_relu
   lr: 0.0005
-  n_fp_layers: 2
-  n_task_layers: 1
+  n_fp_layers: 2 
+  n_task_layers: 1 
   neighbor_aggr_mode: transformer
   num_hop: 4
-  num_label_hops: 4
+  num_label_hops: 4 
   submetapath_hops: 4
-  weight_decay: 5.00E-05
+  weight_decay: 5e-05
+  epochs: 50
+  run: 5
+
+
+# SeHGNNver2_ACM_tuned_3: &SeHGNNver2_ACM_tuned_3
+#   <<: *SeHGNNver2_ACM
+#   neighbor_aggr_calc: basic
+#   label_feats: True
+#   residual: True
+#   amp: True
+#   dropout: 0.8
+#   embed_size: 512
+#   hidden: 1024
+#   input_drop: 0.2
+#   att_drop: 0
+#   act: leaky_relu
+#   lr: 0.0005
+#   n_fp_layers: 2 
+#   n_task_layers: 1 
+#   neighbor_aggr_mode: transformer
+#   num_hop: 4
+#   num_label_hops: 4 
+#   submetapath_hops: 4
+#   weight_decay: 5e-05
+#   epochs: 50
+#   run: 5
 
 #concat
 #DBLP
@@ -411,25 +440,6 @@ SeHGNNver2_DBLP_tuned_concat_alpha_manual: &SeHGNNver2_DBLP_tuned_concat_alpha_m
   submetapath_feature_weight: 0.2
   submetapath_hops: 4
   weight_decay: 0
-
-# SeHGNNver2_DBLP_tuned_concat_alpha_auto: &SeHGNNver2_DBLP_tuned_concat_alpha_auto
-#   <<: *SeHGNNver2_DBLP
-#   neighbor_aggr_calc: concat
-#   calc_type: linear
-#   dropout: 0.5
-#   embed_size: 512
-#   input_drop: 0.5
-#   lr: 0.001
-#   n_fp_layers: 2 
-#   n_task_layers: 3 
-#   neighbor_aggr_mode: alpha_auto
-#   neighbor_encoder: mean
-#   num_hop: 2
-#   num_label_hops: 4
-#   sampling_limit: 15
-#   submetapath_feature_weight: 0.2
-#   submetapath_hops: 4
-#   weight_decay: 0
 
 SeHGNNver2_DBLP_tuned_concat_transformer: &SeHGNNver2_DBLP_tuned_3_concattransformer
   <<: *SeHGNNver2_DBLP
