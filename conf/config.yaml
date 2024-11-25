@@ -302,6 +302,7 @@ SeHGNNver2_IMDB_tuned_basic_alpha_manual: &SeHGNNver2_IMDB_tuned_basic_alpha_man
 SeHGNNver2_IMDB_tuned_basic_alpha_auto: &SeHGNNver2_IMDB_tuned_basic_alpha_auto
   <<: *SeHGNNver2_IMDB 
   neighbor_aggr_calc: basic
+  residual: True
   dropout: 0.2
   embed_size: 512
   hidden: 1024
@@ -320,6 +321,7 @@ SeHGNNver2_IMDB_tuned_basic_alpha_auto: &SeHGNNver2_IMDB_tuned_basic_alpha_auto
 SeHGNNver2_IMDB_tuned_basic_transformer: &SeHGNNver2_IMDB_tuned_basic_transformer 
   <<: *SeHGNNver2_IMDB 
   neighbor_aggr_calc: basic
+  residual: True
   dropout: 0.2
   embed_size: 256
   hidden: 512
@@ -339,6 +341,7 @@ SeHGNNver2_IMDB_tuned_basic_transformer: &SeHGNNver2_IMDB_tuned_basic_transforme
 SeHGNNver2_ACM_tuned_basic_alpha_manual: &SeHGNNver2_ACM_tuned_basic_alpha_manual
   <<: *SeHGNNver2_ACM
   neighbor_aggr_calc: basic
+  residual: True
   dropout: 0.5
   embed_size: 256
   hidden: 512
@@ -358,6 +361,7 @@ SeHGNNver2_ACM_tuned_basic_alpha_manual: &SeHGNNver2_ACM_tuned_basic_alpha_manua
 SeHGNNver2_ACM_tuned_basic_alpha_auto: &SeHGNNver2_ACM_tuned_basic_alpha_auto
   <<: *SeHGNNver2_ACM
   neighbor_aggr_calc: basic
+  residual: True
   dropout: 0.5
   embed_size: 256
   hidden: 512
@@ -397,35 +401,12 @@ SeHGNNver2_ACM_tuned_basic_transformer: &SeHGNNver2_ACM_tuned_basic_transformer
   run: 5
 
 
-# SeHGNNver2_ACM_tuned_3: &SeHGNNver2_ACM_tuned_3
-#   <<: *SeHGNNver2_ACM
-#   neighbor_aggr_calc: basic
-#   label_feats: True
-#   residual: True
-#   amp: True
-#   dropout: 0.8
-#   embed_size: 512
-#   hidden: 1024
-#   input_drop: 0.2
-#   att_drop: 0
-#   act: leaky_relu
-#   lr: 0.0005
-#   n_fp_layers: 2 
-#   n_task_layers: 1 
-#   neighbor_aggr_mode: transformer
-#   num_hop: 4
-#   num_label_hops: 4 
-#   submetapath_hops: 4
-#   weight_decay: 5e-05
-#   epochs: 50
-#   run: 5
-
 #concat
 #DBLP
 SeHGNNver2_DBLP_tuned_concat_alpha_manual: &SeHGNNver2_DBLP_tuned_concat_alpha_manual
   <<: *SeHGNNver2_DBLP
   neighbor_aggr_calc: concat
-  calc_type: linear
+  calc_type: mean
   dropout: 0.5
   embed_size: 512
   input_drop: 0.5
@@ -438,6 +419,24 @@ SeHGNNver2_DBLP_tuned_concat_alpha_manual: &SeHGNNver2_DBLP_tuned_concat_alpha_m
   num_label_hops: 4
   sampling_limit: 15
   submetapath_feature_weight: 0.2
+  submetapath_hops: 4
+  weight_decay: 0
+
+SeHGNNver2_DBLP_tuned_concat_alpha_auto: &SeHGNNver2_DBLP_tuned_concat_alpha_auto
+  <<: *SeHGNNver2_DBLP
+  neighbor_aggr_calc: concat
+  calc_type: mean
+  dropout: 0.5
+  embed_size: 512
+  input_drop: 0.5
+  lr: 0.001
+  n_fp_layers: 2 
+  n_task_layers: 3 
+  neighbor_aggr_mode: alpha_auto
+  neighbor_encoder: mean
+  num_hop: 2
+  num_label_hops: 4
+  sampling_limit: 15
   submetapath_hops: 4
   weight_decay: 0
 
@@ -462,6 +461,7 @@ SeHGNNver2_DBLP_tuned_concat_transformer: &SeHGNNver2_DBLP_tuned_3_concattransfo
 SeHGNNver2_IMDB_tuned_concat_alpha_manual: &SeHGNNver2_IMDB_tuned_1_concat_alpha_manual
   <<: *SeHGNNver2_IMDB 
   neighbor_aggr_calc: concat
+  residual: True
   calc_type: mean
   dropout: 0.2
   embed_size: 512
@@ -478,28 +478,29 @@ SeHGNNver2_IMDB_tuned_concat_alpha_manual: &SeHGNNver2_IMDB_tuned_1_concat_alpha
   submetapath_hops: 2
   weight_decay: 0
 
-# SeHGNNver2_IMDB_tuned_concat_alpha_auto: &SeHGNNver2_IMDB_tuned_1_concat_alpha_auto
-#   <<: *SeHGNNver2_IMDB 
-#   neighbor_aggr_calc: concat
-#   calc_type: mean
-#   dropout: 0.2
-#   embed_size: 512
-#   input_drop: 0
-#   lr: 0.001
-#   n_fp_layers: 2
-#   n_task_layers: 1
-#   neighbor_aggr_mode: alpha_auto
-#   neighbor_encoder: mean
-#   num_hop: 4
-#   num_label_hops: 4
-#   sampling_limit: 10
-#   submetapath_feature_weight: 0.2
-#   submetapath_hops: 2
-#   weight_decay: 0
+SeHGNNver2_IMDB_tuned_concat_alpha_auto: &SeHGNNver2_IMDB_tuned_1_concat_alpha_auto
+  <<: *SeHGNNver2_IMDB 
+  neighbor_aggr_calc: concat
+  residual: True
+  calc_type: mean
+  dropout: 0.2
+  embed_size: 512
+  input_drop: 0
+  lr: 0.001
+  n_fp_layers: 2
+  n_task_layers: 1
+  neighbor_aggr_mode: alpha_auto
+  neighbor_encoder: mean
+  num_hop: 4
+  num_label_hops: 4
+  sampling_limit: 10
+  submetapath_hops: 2
+  weight_decay: 0
 
 SeHGNNver2_IMDB_tuned_concat_transformer: &SeHGNNver2_IMDB_tuned_concat_transformer
   <<: *SeHGNNver2_IMDB 
   neighbor_aggr_calc: concat
+  residual: True
   calc_type: mean
   dropout: 0.5
   embed_size: 512
@@ -520,7 +521,8 @@ SeHGNNver2_IMDB_tuned_concat_transformer: &SeHGNNver2_IMDB_tuned_concat_transfor
 SeHGNNver2_ACM_tuned_concat_alpha_manual: &SeHGNNver2_ACM_tuned_concat_alpha_manual
   <<: *SeHGNNver2_ACM
   neighbor_aggr_calc: concat
-  calc_type: linear
+  residual: True
+  calc_type: mean
   dropout: 0.5
   embed_size: 256
   input_drop: 0.8
@@ -536,28 +538,29 @@ SeHGNNver2_ACM_tuned_concat_alpha_manual: &SeHGNNver2_ACM_tuned_concat_alpha_man
   submetapath_hops: 2
   weight_decay: 0.0001
 
-# SeHGNNver2_ACM_tuned_concat_alpha_auto: &SeHGNNver2_ACM_tuned_concat_alpha_auto
-#   <<: *SeHGNNver2_ACM
-#   neighbor_aggr_calc: concat
-#   calc_type: linear
-#   dropout: 0.5
-#   embed_size: 256
-#   input_drop: 0.8
-#   lr: 0.001
-#   n_fp_layers: 2 
-#   n_task_layers: 2 
-#   neighbor_aggr_mode: alpha_auto
-#   neighbor_encoder: mean 
-#   num_hop: 4
-#   num_label_hops: 4
-#   sampling_limit: 15
-#   submetapath_feature_weight: 0.2
-#   submetapath_hops: 2
-#   weight_decay: 0.0001
+SeHGNNver2_ACM_tuned_concat_alpha_auto: &SeHGNNver2_ACM_tuned_concat_alpha_auto
+  <<: *SeHGNNver2_ACM
+  neighbor_aggr_calc: concat
+  residual: True
+  calc_type: mean
+  dropout: 0.5
+  embed_size: 256
+  input_drop: 0.8
+  lr: 0.001
+  n_fp_layers: 2 
+  n_task_layers: 2 
+  neighbor_aggr_mode: alpha_auto
+  neighbor_encoder: mean 
+  num_hop: 4
+  num_label_hops: 4
+  sampling_limit: 15
+  submetapath_hops: 2
+  weight_decay: 0.0001
 
 SeHGNNver2_ACM_tuned_concat_transformer: &SeHGNNver2_ACM_tuned_concat_transformer
   <<: *SeHGNNver2_ACM
   neighbor_aggr_calc: concat
+  residual: True
   calc_type: mean
   dropout: 0.8
   embed_size: 512
