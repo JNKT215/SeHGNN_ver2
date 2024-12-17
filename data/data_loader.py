@@ -154,7 +154,31 @@ class data_loader:
                         meta_dict[i].append(beg + end[1:])
         return meta_dict
 
-    def gen_file_for_evaluate(self, test_idx, label,true_label, file_name, mode='bi'):
+    def gen_file_for_macnemar(self, test_idx, label,true_label, file_name, mode='bi'):
+        if test_idx.shape[0] != label.shape[0]:
+            return
+        if mode == 'multi':
+            multi_label=[]
+            for i in range(label.shape[0]):
+                label_list = [str(j) for j in range(label[i].shape[0]) if label[i][j]==1]
+                multi_label.append(' '.join(label_list))
+            label=multi_label
+
+            multi_true_label,true_label =[], np.array(true_label.to("cpu"))
+            for i in range(true_label.shape[0]):
+                label_list = [str(j) for j in range(true_label[i].shape[0]) if true_label[i][j]==1]
+                multi_true_label.append(' '.join(label_list))
+            true_label = multi_true_label
+        elif mode=='bi':
+            label = np.array(label)
+            true_label = np.array(true_label.to("cpu"))
+        else:
+            return
+        with open(file_name, "w") as f:
+            for nid, l,true_l in zip(test_idx, label,true_label):
+                f.write(f"{nid},{l},{true_l}\n")
+
+    def gen_file_for_evaluate(self, test_idx, label, file_name, mode='bi'):
         if test_idx.shape[0] != label.shape[0]:
             return
         if mode == 'multi':
@@ -165,12 +189,11 @@ class data_loader:
             label=multi_label
         elif mode=='bi':
             label = np.array(label)
-            true_label = np.array(true_label.to("cpu"))
         else:
             return
         with open(file_name, "w") as f:
-            for nid, l,true_l in zip(test_idx, label,true_label):
-                f.write(f"{nid}\t{self.get_node_type(nid)}\t{l}\t{true_l}\n")
+            for nid, l in zip(test_idx, label):
+                f.write(f"{nid}\t\t{self.get_node_type(nid)}\t{l}\n")
 
     def evaluate(self, pred):
         y_true = self.labels_test['data'][self.labels_test['mask']]
