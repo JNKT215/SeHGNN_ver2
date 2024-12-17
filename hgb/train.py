@@ -12,7 +12,7 @@ from sklearn.metrics import f1_score
 import torch.nn as nn
 import os,sys
 from datetime import datetime
-sys.path.append('./data')
+sys.path.append('./SeHGNN_ver2/data')
 from data_loader import HeteroDataSet
 
 def evaluator(gt, pred):
@@ -133,8 +133,7 @@ def get_final_score(cfg,data,best_pred,full_loader,model,checkpt_file,labels,dev
     if len(full_loader):
         model.load_state_dict(torch.load(f'{checkpt_file}.pt', map_location='cpu'), strict=True)
         if not cfg["cpu"]: torch.cuda.empty_cache()
-        submetapath_feats = model.submetapath_aggr(data.neighbor_aggr_feature_per_metapath) if model.cfg["model"] == "SeHGNNver2" else {}
-        raw_preds = test(model,full_loader,submetapath_feats,device)
+        raw_preds = test(model,full_loader,data.neighbor_aggr_feature_per_metapath,device)
         all_pred[data.extra_nid] = raw_preds
     torch.save(all_pred, f'{checkpt_file}.pt')
 
@@ -248,7 +247,7 @@ def main(cfg):
     for key,value in cfg.items():
         mlflow.log_param(key,value)
         
-    root = utils.get_original_cwd() + '/data/datasets/' + cfg['dataset']
+    root = utils.get_original_cwd() + '/SeHGNN_ver2/data/datasets/' + cfg['dataset']
     device = torch.device(f'cuda:{cfg.gpu_id}' if torch.cuda.is_available() else 'cpu')
     data = HeteroDataSet(cfg=cfg,root=root)
     preprocessing = PreProcessing(cfg=cfg).to(device)
