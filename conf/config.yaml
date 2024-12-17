@@ -305,7 +305,7 @@ SeHGNNver2_IMDB_tuned_basic_alpha_auto: &SeHGNNver2_IMDB_tuned_basic_alpha_auto
   residual: True
   dropout: 0.2
   embed_size: 512
-  hidden: 1024
+  hidden: 512
   input_drop: 0
   att_drop: 0
   act: none
