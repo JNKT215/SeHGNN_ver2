@@ -31,7 +31,8 @@ def main(args):
     p_value = chi2.sf(chi_square_value, 1)
     # 結果の出力（p値）
     print(f"{args.dataset}:seed{args.seed}")
-    print("p-value:", p_value)
+    print(f"x^2:{chi_square_value}")
+    print(f"p-value:{p_value}")
 
 
 
