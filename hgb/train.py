@@ -234,7 +234,7 @@ def run(cfg,model, data,optimizer,loader,device,scalar=None):
     
     train_acc,val_acc,test_acc = get_final_score(cfg,data,best_pred,full_loader,model,checkpt_file,labels,device)
      
-    return test_acc
+    return val_acc,test_acc
 
 
 @hydra.main(config_path='../conf', config_name='config')
@@ -256,7 +256,8 @@ def main(cfg):
     data  = preprocessing(data,model_name=cfg["model"])
     scalar = torch.cuda.amp.GradScaler()  if cfg['amp'] and device !='cpu' else None
     
-    artifacts,test_accs_micro,test_accs_macro = {},[],[]
+    val_accs_micro,val_accs_macro = [],[]
+    test_accs_micro,test_accs_macro = [],[]
     for i in tqdm(range(cfg['run'])):
         print('Restart with seed =', i+1)
         set_random_seed(seed=i+1)
@@ -275,15 +276,20 @@ def main(cfg):
         gc.collect()
         model = return_model(cfg,data).to(device)
         optimizer = torch.optim.Adam(params=model.parameters(), lr=cfg["lr"],weight_decay=cfg['weight_decay'])
-        test_acc = run(cfg,model,data,optimizer,loader,device,scalar=scalar)
+        val_acc,test_acc = run(cfg,model,data,optimizer,loader,device,scalar=scalar)
         
+        val_accs_micro.append(val_acc[0])
+        val_accs_macro.append(val_acc[1])
         test_accs_micro.append(test_acc[0])
         test_accs_macro.append(test_acc[1])
-        
     # acc_max_index = test_accs.index(max(test_accs))
+    val_accs_micro = [i * 100 for i in val_accs_micro]
+    val_accs_macro = [i * 100 for i in val_accs_macro]
     test_accs_micro = [i * 100 for i in test_accs_micro]
     test_accs_macro = [i * 100 for i in test_accs_macro]
     
+    val_acc_micro_ave = sum(val_accs_micro)/len(val_accs_micro)
+    val_acc_macro_ave = sum(val_accs_macro)/len(val_accs_macro)
     test_acc_micro_ave = sum(test_accs_micro)/len(test_accs_micro)
     test_acc_macro_ave = sum(test_accs_macro)/len(test_accs_macro)
     
@@ -294,15 +300,15 @@ def main(cfg):
     mlflow.log_metric('test_acc_micro_min',min(test_accs_micro))
     mlflow.log_metric('test_acc_micro_mean',test_acc_micro_ave)
     mlflow.log_metric('test_acc_micro_max',max(test_accs_micro))
-    mlflow.log_metric('test_acc_micro_max_seed',test_accs_micro.index(max(test_accs_micro))+1)
+    mlflow.log_metric('val_acc_micro_mean',val_acc_micro_ave)
     
     #f1_score(macro)
     mlflow.log_metric('test_acc_macro_min',min(test_accs_macro))
     mlflow.log_metric('test_acc_macro_mean',test_acc_macro_ave)
     mlflow.log_metric('test_acc_macro_max',max(test_accs_macro))
-    mlflow.log_metric('test_acc_macro_max_seed',test_accs_macro.index(max(test_accs_macro))+1)
+    mlflow.log_metric('val_acc_macro_mean',val_acc_macro_ave)
     mlflow.end_run()
-    return test_acc_micro_ave
+    return val_acc_micro_ave
 
     
     
