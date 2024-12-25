@@ -293,6 +293,7 @@ def main(cfg):
     test_acc_micro_ave = sum(test_accs_micro)/len(test_accs_micro)
     test_acc_macro_ave = sum(test_accs_macro)/len(test_accs_macro)
     
+    val_mean_acc = (val_acc_micro_ave + val_acc_macro_ave)/2
     # epoch_ave = sum(epochs)/len(epochs)
     # mlflow.log_metric('epoch_mean',epoch_ave)
 
@@ -300,15 +301,17 @@ def main(cfg):
     mlflow.log_metric('test_acc_micro_min',min(test_accs_micro))
     mlflow.log_metric('test_acc_micro_mean',test_acc_micro_ave)
     mlflow.log_metric('test_acc_micro_max',max(test_accs_micro))
-    mlflow.log_metric('val_acc_micro_mean',val_acc_micro_ave)
-    
+
     #f1_score(macro)
     mlflow.log_metric('test_acc_macro_min',min(test_accs_macro))
     mlflow.log_metric('test_acc_macro_mean',test_acc_macro_ave)
     mlflow.log_metric('test_acc_macro_max',max(test_accs_macro))
+    #f1_score(val)
+    mlflow.log_metric('val_acc_mean',val_mean_acc)
+    mlflow.log_metric('val_acc_micro_mean',val_acc_micro_ave)
     mlflow.log_metric('val_acc_macro_mean',val_acc_macro_ave)
     mlflow.end_run()
-    return val_acc_micro_ave
+    return val_mean_acc
 
     
     

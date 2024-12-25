@@ -447,10 +447,6 @@ class SubMetapathAggr(nn.Module):
         self.ntype_num_node = {k:v.shape[0] for k,v in ntype_feature.items()}
         self.data_size = {k:v.shape[1] for k,v in ntype_feature.items()}
         self.metapath_name = metapath_name
-        if self.cfg['sub_metapth_act'] == "leaky_relu":
-            self.act = torch.nn.LeakyReLU(0.2)
-        elif self.cfg['sub_metapth_act'] == "none":
-            self.act = lambda x: x
         self.n_lin = nn.Linear(cfg["embed_size"],cfg["embed_size"])
         self.sub_metapath_atten_vector = nn.ParameterDict({})
         self.submetapath_input_drop = nn.Dropout(cfg["input_drop"])
@@ -572,22 +568,12 @@ class SubMetapathAggr(nn.Module):
             #semantic fusion
             submetapath_emmbedding_feature = []
             for _, metapaths in tqdm(neighbor_aggr_feature_per_metapath.items()):
-                if self.cfg["neighbor_encoder"] == "mean":
-                    features_per_node = [self.submetapath_input_drop(feature.to(f'cuda:{self.cfg.gpu_id}') @ self.submetapath_embeding[metapath]) for metapath,feature in metapaths.items()]
-                else: #self.cfg["neighbor_encoder"] == "sum"
-                    features_per_node = [torch.sum(self.submetapath_input_drop(feature.to(f'cuda:{self.cfg.gpu_id}') @ self.submetapath_embeding[metapath]),dim=0) for metapath,feature in metapaths.items()]
+                #mean
+                features_per_node = [self.submetapath_input_drop(feature.to(f'cuda:{self.cfg.gpu_id}') @ self.submetapath_embeding[metapath]) for metapath,feature in metapaths.items()]
                 semantic_fusion_feature_list_tensor = torch.stack(features_per_node)
                 #------（Semantic Fusion）---- 
-                if self.cfg['calc_type'] == "attention":
-                    target_type = list(metapaths.keys())[0]
-                    attn_score = self.act((self.sub_metapath_atten_vector[target_type] * torch.tanh(semantic_fusion_feature_list_tensor)).sum(-1))
-                    attn = F.softmax(attn_score, dim=0)
-                    semantic_fusion_feature = torch.sum(attn.view(len(metapaths),  -1) * semantic_fusion_feature_list_tensor, dim=0)
-                elif self.cfg['calc_type'] == "mean": # mean
-                    semantic_fusion_feature = torch.mean(semantic_fusion_feature_list_tensor,dim=0)
-                elif self.cfg['calc_type'] == "linear": # mean
-                    semantic_fusion_feature = torch.mean(semantic_fusion_feature_list_tensor,dim=0)
-                    semantic_fusion_feature = self.n_lin(semantic_fusion_feature)
+                # mean
+                semantic_fusion_feature = torch.mean(semantic_fusion_feature_list_tensor,dim=0)
                 submetapath_emmbedding_feature.append(semantic_fusion_feature)  
                 #------（Semantic Fusion）----
             
