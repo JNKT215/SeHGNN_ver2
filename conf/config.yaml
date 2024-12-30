@@ -63,12 +63,11 @@ SeHGNN: &SeHGNN
 SeHGNNver2: &SeHGNNver2
   <<: *SeHGNN
   model: SeHGNNver2
-  submetapath_hops: 2
-  submetapath_feature_weight: 0.2
-  sampling_limit: 10
   neighbor_aggr_calc: basic
   neighbor_aggr_mode: alpha_manual
-  path: DBLP_checkpoint.pt
+  submetapath_hops: 2
+  submetapath_feature_weight: none
+  sampling_limit: none
 
 # -------model instance + dataset-------
 SeHGNN_DBLP: &SeHGNN_DBLP
@@ -173,393 +172,200 @@ SeHGNN_Freebase_tuned: &SeHGNN_Freebase_tuned
 SeHGNNver2_DBLP: &SeHGNNver2_DBLP
   <<: [*SeHGNN_DBLP_tuned,*SeHGNNver2]
   model: SeHGNNver2
-  submetapath_hops: 2
-  sampling_limit: 10
-  neighbor_aggr_calc: basic
-  neighbor_aggr_mode: alpha_manual
   path: DBLP_checkpoint.pt
-
-SeHGNNver2_ACM: &SeHGNNver2_ACM
-  <<: [*SeHGNN_ACM_tuned,*SeHGNNver2]
-  model: SeHGNNver2
-  submetapath_hops: 2
-  sampling_limit: 8
-  neighbor_aggr_calc: basic
-  neighbor_aggr_mode: alpha_manual
-  path: ACM_checkpoint.pt
 
 SeHGNNver2_IMDB: &SeHGNNver2_IMDB
   <<: [*SeHGNN_IMDB_tuned,*SeHGNNver2]
   model: SeHGNNver2
-  submetapath_hops: 4
-  sampling_limit: 5
-  neighbor_aggr_calc: basic
-  neighbor_aggr_mode: alpha_manual
   path: IMDB_checkpoint.pt
 
-SeHGNNver2_Freebase: &SeHGNNver2_Freebase
-  <<: [*SeHGNN_Freebase_tuned,*SeHGNNver2]
+SeHGNNver2_ACM: &SeHGNNver2_ACM
+  <<: [*SeHGNN_ACM_tuned,*SeHGNNver2]
   model: SeHGNNver2
-  lr: 0.0003
-  weight_decay: 0.0001
-  neighbor_aggr_calc: basic
-  neighbor_aggr_mode: alpha_manual
-  path: Freebase_checkpoint.pt
+  path: ACM_checkpoint.pt
 
-# -------model instance (our study (exist tuned setting))-------
+# -------model instance (our study + tuned parameters)-------
+#SeHGNN
+SeHGNNver2_DBLP_tuned: &SeHGNNver2_DBLP_tuned
+  <<: *SeHGNNver2_DBLP
+  model: SeHGNNver2
+  neighbor_aggr_calc: none
+  neighbor_aggr_mode: none
+  label_feats: True 
+  amp: True
+  epochs: 50
+  submetapath_hops: 2
+  dropout: 0.4
+  embed_size: 512
+  input_drop: 0.5
+  lr: 0.001
+  n_task_layers: 2
+  weight_decay: 0
+  run: 5
+  path: DBLP_checkpoint.pt
+
+SeHGNNver2_IMDB_tuned: &SeHGNNver2_IMDB_tuned
+  <<: *SeHGNNver2_IMDB
+  model: SeHGNNver2
+  neighbor_aggr_calc: none
+  neighbor_aggr_mode: none
+  label_feats: True 
+  amp: True
+  epochs: 50
+  submetapath_hops: 2
+  dropout: 0.2
+  embed_size: 512
+  input_drop: 0
+  lr: 0.001
+  n_task_layers: 2
+  weight_decay: 0
+  run: 5
+  path: IMDB_checkpoint.pt
+
+SeHGNNver2_ACM_tuned: &SeHGNNver2_ACM_tuned
+  <<: *SeHGNNver2_ACM
+  model: SeHGNNver2
+  neighbor_aggr_calc: none
+  neighbor_aggr_mode: none
+  label_feats: True 
+  amp: True
+  epochs: 50
+  submetapath_hops: 2
+  dropout: 0.5
+  embed_size: 512
+  input_drop: 0.5
+  lr: 0.001
+  n_task_layers: 3 
+  weight_decay: 0.0005
+  run: 5
+  path: ACM_checkpoint.pt
+
+# -------model instance (our study + instance model setting)-------
 #basic
 #DBLP
-#50epochs
 SeHGNNver2_DBLP_tuned_basic_alpha_manual: &SeHGNNver2_DBLP_tuned_basic_alpha_manual
-  <<: *SeHGNNver2_DBLP
+  <<: *SeHGNNver2_DBLP_tuned
   neighbor_aggr_calc: basic
-  dropout: 0.5
-  embed_size: 512
-  hidden: 512
-  input_drop: 0.5
-  att_drop: 0
-  act: none
-  lr: 0.001
-  n_fp_layers: 2
-  n_task_layers: 3
   neighbor_aggr_mode: alpha_manual
-  num_hop: 2
-  num_label_hops: 4
   submetapath_feature_weight: 0.2
-  submetapath_hops: 2
-  weight_decay: 0
-#50epochs
+
 SeHGNNver2_DBLP_tuned_basic_alpha_auto: &SeHGNNver2_DBLP_tuned_basic_alpha_auto
-  <<: *SeHGNNver2_DBLP
+  <<: *SeHGNNver2_DBLP_tuned
   neighbor_aggr_calc: basic
-  dropout: 0.5
-  embed_size: 512 
-  hidden: 512
-  input_drop: 0.5
-  att_drop: 0
-  act: none
-  lr: 0.001
-  n_fp_layers: 2
-  n_task_layers: 3
   neighbor_aggr_mode: alpha_auto
-  num_hop: 2
-  num_label_hops: 4
-  submetapath_hops: 2
-  weight_decay: 0
-#200epochs
+
+
 SeHGNNver2_DBLP_tuned_basic_transformer: &SeHGNNver2_DBLP_tuned_basic_transformer
-  <<: *SeHGNNver2_DBLP
+  <<: *SeHGNNver2_DBLP_tuned
   neighbor_aggr_calc: basic
-  dropout: 0.6
-  embed_size: 256
-  hidden: 512
-  input_drop: 0
-  att_drop: 0
-  act: sigmoid
-  lr: 0.001
-  n_fp_layers: 2
-  n_task_layers: 3
   neighbor_aggr_mode: transformer
-  num_hop: 2
-  num_label_hops: 4
-  submetapath_hops: 2
-  weight_decay: 0
 
 #IMDB
-#200epochs
 SeHGNNver2_IMDB_tuned_basic_alpha_manual: &SeHGNNver2_IMDB_tuned_basic_alpha_manual 
-  <<: *SeHGNNver2_IMDB 
+  <<: *SeHGNNver2_IMDB_tuned
   neighbor_aggr_calc: basic
-  dropout: 0.2
-  embed_size: 512
-  hidden: 512
-  input_drop: 0
-  att_drop: 0
-  act: none
-  lr: 0.001
-  n_fp_layers: 2
-  n_task_layers: 1
   neighbor_aggr_mode: alpha_manual
-  num_hop: 4
-  num_label_hops: 4
-  submetapath_feature_weight: 0.2
-  submetapath_hops: 2
-  weight_decay: 0
-#50epochs
+  submetapath_feature_weight: 0.2 
+
 SeHGNNver2_IMDB_tuned_basic_alpha_auto: &SeHGNNver2_IMDB_tuned_basic_alpha_auto
-  <<: *SeHGNNver2_IMDB 
+  <<: *SeHGNNver2_IMDB_tuned 
   neighbor_aggr_calc: basic
-  residual: True
-  dropout: 0.2
-  embed_size: 512
-  hidden: 512
-  input_drop: 0
-  att_drop: 0
-  act: none
-  lr: 0.0005
-  n_fp_layers: 2
-  n_task_layers: 1
   neighbor_aggr_mode: alpha_auto
-  num_hop: 4
-  num_label_hops: 4
-  submetapath_hops: 2
-  weight_decay: 2e-06
-#200epochs
+
 SeHGNNver2_IMDB_tuned_basic_transformer: &SeHGNNver2_IMDB_tuned_basic_transformer 
-  <<: *SeHGNNver2_IMDB 
+  <<: *SeHGNNver2_IMDB_tuned 
   neighbor_aggr_calc: basic
-  residual: True
-  dropout: 0.2
-  embed_size: 256
-  hidden: 512
-  input_drop:  0
-  att_drop: 0
-  act: relu
-  lr: 0.001
-  n_fp_layers: 2
-  n_task_layers: 1
   neighbor_aggr_mode: transformer
-  num_hop: 4
-  num_label_hops: 4
-  submetapath_hops: 4
-  weight_decay: 0
 
 #ACM
 SeHGNNver2_ACM_tuned_basic_alpha_manual: &SeHGNNver2_ACM_tuned_basic_alpha_manual
-  <<: *SeHGNNver2_ACM
+  <<: *SeHGNNver2_ACM_tuned
   neighbor_aggr_calc: basic
-  residual: True
-  dropout: 0.5
-  embed_size: 256
-  hidden: 512
-  input_drop: 0.8
-  att_drop: 0
-  act: none
-  lr: 0.001
-  n_fp_layers: 2
-  n_task_layers: 2
   neighbor_aggr_mode: alpha_manual
-  num_hop: 4
-  num_label_hops: 4
   submetapath_feature_weight: 0.2
-  submetapath_hops: 4
-  weight_decay: 0.0001
 
 SeHGNNver2_ACM_tuned_basic_alpha_auto: &SeHGNNver2_ACM_tuned_basic_alpha_auto
-  <<: *SeHGNNver2_ACM
+  <<: *SeHGNNver2_ACM_tuned
   neighbor_aggr_calc: basic
-  residual: True
-  dropout: 0.5
-  embed_size: 256
-  hidden: 512
-  input_drop: 0.8
-  att_drop: 0
-  act: none
-  lr: 0.001
-  n_fp_layers: 2
-  n_task_layers: 2
   neighbor_aggr_mode: alpha_auto
-  num_hop: 4
-  num_label_hops: 4
-  submetapath_hops: 4
-  weight_decay: 0.0001
 
 SeHGNNver2_ACM_tuned_basic_transformer: &SeHGNNver2_ACM_tuned_basic_transformer
-  <<: *SeHGNNver2_ACM
+  <<: *SeHGNNver2_ACM_tuned
   neighbor_aggr_calc: basic
-  label_feats: True
-  residual: False
-  amp: True
-  dropout: 0.8
-  embed_size: 512
-  hidden: 512
-  input_drop: 0.2
-  lr: 0.001
-  n_fp_layers: 2
-  n_task_layers: 1
   neighbor_aggr_mode: transformer
-  num_hop: 4
-  num_label_hops: 4
-  submetapath_hops: 2
-  weight_decay: 0.0001
-  epochs: 50
 
 #concat
 #DBLP
 SeHGNNver2_DBLP_tuned_concat_alpha_manual: &SeHGNNver2_DBLP_tuned_concat_alpha_manual
-  <<: *SeHGNNver2_DBLP
+  <<: *SeHGNNver2_DBLP_tuned
   neighbor_aggr_calc: concat
-  dropout: 0.5
-  embed_size: 512
-  input_drop: 0.5
-  lr: 0.001
-  n_fp_layers: 2 
-  n_task_layers: 3 
-  neighbor_aggr_mode: alpha_manual 
-  num_hop: 2
-  num_label_hops: 4
-  sampling_limit: 15
+  neighbor_aggr_mode: alpha_manual
   submetapath_feature_weight: 0.2
-  submetapath_hops: 4
-  weight_decay: 0
+  sampling_limit: 10
 
 SeHGNNver2_DBLP_tuned_concat_alpha_auto: &SeHGNNver2_DBLP_tuned_concat_alpha_auto
-  <<: *SeHGNNver2_DBLP
+  <<: *SeHGNNver2_DBLP_tuned
   neighbor_aggr_calc: concat
-  dropout: 0.5
-  embed_size: 512
-  input_drop: 0.5
-  lr: 0.001
-  n_fp_layers: 2 
-  n_task_layers: 3 
   neighbor_aggr_mode: alpha_auto
-  num_hop: 2
-  num_label_hops: 4
-  sampling_limit: 15
-  submetapath_hops: 4
-  weight_decay: 0
+  sampling_limit: 10
+
 
 SeHGNNver2_DBLP_tuned_concat_transformer: &SeHGNNver2_DBLP_tuned_3_concattransformer
-  <<: *SeHGNNver2_DBLP
+  <<: *SeHGNNver2_DBLP_tuned
   neighbor_aggr_calc: concat
-  dropout: 0.5
-  embed_size: 512
-  input_drop: 0.5
-  lr: 0.001
-  n_fp_layers: 2 
-  n_task_layers: 3 
   neighbor_aggr_mode: transformer
-  num_hop: 2
-  num_label_hops: 4
-  sampling_limit: 15 
-  submetapath_hops: 4
-  weight_decay: 0
+  sampling_limit: 10
+
 #IMDB
 SeHGNNver2_IMDB_tuned_concat_alpha_manual: &SeHGNNver2_IMDB_tuned_1_concat_alpha_manual
-  <<: *SeHGNNver2_IMDB 
+  <<: *SeHGNNver2_IMDB_tuned 
   neighbor_aggr_calc: concat
-  residual: True
-  dropout: 0.2
-  embed_size: 512
-  input_drop: 0
-  lr: 0.001
-  n_fp_layers: 2
-  n_task_layers: 1
   neighbor_aggr_mode: alpha_manual
-  num_hop: 4
-  num_label_hops: 4
-  sampling_limit: 10
   submetapath_feature_weight: 0.2
-  submetapath_hops: 2
-  weight_decay: 0
+  sampling_limit: 5
 
 SeHGNNver2_IMDB_tuned_concat_alpha_auto: &SeHGNNver2_IMDB_tuned_1_concat_alpha_auto
-  <<: *SeHGNNver2_IMDB 
+  <<: *SeHGNNver2_IMDB_tuned 
   neighbor_aggr_calc: concat
-  residual: True
-  dropout: 0.2
-  embed_size: 512
-  input_drop: 0
-  lr: 0.001
-  n_fp_layers: 2
-  n_task_layers: 1
   neighbor_aggr_mode: alpha_auto
-  num_hop: 4
-  num_label_hops: 4
-  sampling_limit: 10
-  submetapath_hops: 2
-  weight_decay: 0
+  sampling_limit: 5
 
 SeHGNNver2_IMDB_tuned_concat_transformer: &SeHGNNver2_IMDB_tuned_concat_transformer
-  <<: *SeHGNNver2_IMDB 
+  <<: *SeHGNNver2_IMDB_tuned 
   neighbor_aggr_calc: concat
-  residual: True
-  dropout: 0.5
-  embed_size: 512
-  input_drop: 0.0
-  lr: 0.001
-  n_fp_layers: 2 
-  n_task_layers: 4 
   neighbor_aggr_mode: transformer
-  num_hop: 4
-  num_label_hops: 4
-  sampling_limit: 10 
-  submetapath_hops: 2
-  weight_decay: 0
-
+  sampling_limit: 5
 
 #ACM
 SeHGNNver2_ACM_tuned_concat_alpha_manual: &SeHGNNver2_ACM_tuned_concat_alpha_manual
-  <<: *SeHGNNver2_ACM
+  <<: *SeHGNNver2_ACM_tuned
   neighbor_aggr_calc: concat
-  residual: True
-  dropout: 0.5
-  embed_size: 256
-  input_drop: 0.8
-  lr: 0.001
-  n_fp_layers: 2 
-  n_task_layers: 2 
   neighbor_aggr_mode: alpha_manual
-  num_hop: 4
-  num_label_hops: 4
-  sampling_limit: 15
   submetapath_feature_weight: 0.2
-  submetapath_hops: 2
-  weight_decay: 0.0001
+  sampling_limit: 8
 
 SeHGNNver2_ACM_tuned_concat_alpha_auto: &SeHGNNver2_ACM_tuned_concat_alpha_auto
-  <<: *SeHGNNver2_ACM
+  <<: *SeHGNNver2_ACM_tuned
   neighbor_aggr_calc: concat
-  residual: True
-  dropout: 0.5
-  embed_size: 256
-  input_drop: 0.8
-  lr: 0.001
-  n_fp_layers: 2 
-  n_task_layers: 2 
   neighbor_aggr_mode: alpha_auto
-  num_hop: 4
-  num_label_hops: 4
-  sampling_limit: 15
-  submetapath_hops: 2
-  weight_decay: 0.0001
+  sampling_limit: 8
 
 SeHGNNver2_ACM_tuned_concat_transformer: &SeHGNNver2_ACM_tuned_concat_transformer
-  <<: *SeHGNNver2_ACM
+  <<: *SeHGNNver2_ACM_tuned
   neighbor_aggr_calc: concat
-  residual: True
-  dropout: 0.8
-  embed_size: 512
-  input_drop: 0.2
-  lr: 0.001
-  n_fp_layers: 2 
-  n_task_layers: 1 
   neighbor_aggr_mode: transformer
-  num_hop: 4
-  num_label_hops: 4 
-  sampling_limit: 15 
-  submetapath_hops: 2
-  weight_decay: 0.0001
+  sampling_limit: 8
+
+
 
 
 #debag
 debag:
- <<: *SeHGNNver2_ACM
-#  <<: *SeHGNNver2_IMDB_tuned_1
-#  neighbor_aggr_mode: concat_feature
+ <<: *SeHGNNver2_IMDB_tuned_basic_alpha_manual
  neighbor_aggr_calc: basic
  neighbor_aggr_mode: alpha_manual
-# #  model_name: SeHGNN
-#  submetapath_feature_weight: 0.4
-#  label_feats: True
-#  act: none
-#  run: 5
  epochs: 5
-#  num_label_hops: 2
-#  num_hop: 2
- submetapath_hops: 2 
-#
-
+ run: 1
 
 defaults:
   - override hydra/sweeper: optuna # [basic, optuna]
@@ -570,4 +376,4 @@ hydra:
       _target_: optuna.samplers.TPESampler
     direction: maximize
     n_jobs: 1
-    n_trials: 100
+    n_trials: 50
