@@ -364,7 +364,11 @@ class HeteroDataSet():
                 self.adjs[k].storage._value = None
                 self.adjs[k].storage._value = torch.ones(self.adjs[k].nnz()) / self.adjs[k].sum(dim=-1)[self.adjs[k].storage.row()]
             self.labels = self.init_labels.clone()
-        
+            
+            print(f"dataset: {self.cfg['dataset']}")
+            for etype, adj in self.adjs.items():
+                print(f"etype:{etype}, density:{adj.density() * 100:.2f}%")
+
         if self.cfg['dataset'] == "DBLP":
             self.tgt_type = 'A'
             self.node_dict = {"A": 0, "P": 1, "T": 2,"V":3}
