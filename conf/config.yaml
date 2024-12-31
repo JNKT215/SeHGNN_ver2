@@ -247,7 +247,7 @@ SeHGNNver2_DBLP_tuned_basic_alpha_manual: &SeHGNNver2_DBLP_tuned_basic_alpha_man
   <<: *SeHGNNver2_DBLP_tuned
   neighbor_aggr_calc: basic
   neighbor_aggr_mode: alpha_manual
-  submetapath_feature_weight: 0.2
+  submetapath_feature_weight: 0.3
 
 SeHGNNver2_DBLP_tuned_basic_alpha_auto: &SeHGNNver2_DBLP_tuned_basic_alpha_auto
   <<: *SeHGNNver2_DBLP_tuned
@@ -265,7 +265,7 @@ SeHGNNver2_IMDB_tuned_basic_alpha_manual: &SeHGNNver2_IMDB_tuned_basic_alpha_man
   <<: *SeHGNNver2_IMDB_tuned
   neighbor_aggr_calc: basic
   neighbor_aggr_mode: alpha_manual
-  submetapath_feature_weight: 0.2 
+  submetapath_feature_weight: 0.3
 
 SeHGNNver2_IMDB_tuned_basic_alpha_auto: &SeHGNNver2_IMDB_tuned_basic_alpha_auto
   <<: *SeHGNNver2_IMDB_tuned 
@@ -282,7 +282,7 @@ SeHGNNver2_ACM_tuned_basic_alpha_manual: &SeHGNNver2_ACM_tuned_basic_alpha_manua
   <<: *SeHGNNver2_ACM_tuned
   neighbor_aggr_calc: basic
   neighbor_aggr_mode: alpha_manual
-  submetapath_feature_weight: 0.2
+  submetapath_feature_weight: 0.5
 
 SeHGNNver2_ACM_tuned_basic_alpha_auto: &SeHGNNver2_ACM_tuned_basic_alpha_auto
   <<: *SeHGNNver2_ACM_tuned
@@ -300,7 +300,7 @@ SeHGNNver2_DBLP_tuned_concat_alpha_manual: &SeHGNNver2_DBLP_tuned_concat_alpha_m
   <<: *SeHGNNver2_DBLP_tuned
   neighbor_aggr_calc: concat
   neighbor_aggr_mode: alpha_manual
-  submetapath_feature_weight: 0.2
+  submetapath_feature_weight: 0.3
   sampling_limit: 10
 
 SeHGNNver2_DBLP_tuned_concat_alpha_auto: &SeHGNNver2_DBLP_tuned_concat_alpha_auto
@@ -321,7 +321,7 @@ SeHGNNver2_IMDB_tuned_concat_alpha_manual: &SeHGNNver2_IMDB_tuned_1_concat_alpha
   <<: *SeHGNNver2_IMDB_tuned 
   neighbor_aggr_calc: concat
   neighbor_aggr_mode: alpha_manual
-  submetapath_feature_weight: 0.2
+  submetapath_feature_weight: 0.3
   sampling_limit: 5
 
 SeHGNNver2_IMDB_tuned_concat_alpha_auto: &SeHGNNver2_IMDB_tuned_1_concat_alpha_auto
@@ -341,7 +341,7 @@ SeHGNNver2_ACM_tuned_concat_alpha_manual: &SeHGNNver2_ACM_tuned_concat_alpha_man
   <<: *SeHGNNver2_ACM_tuned
   neighbor_aggr_calc: concat
   neighbor_aggr_mode: alpha_manual
-  submetapath_feature_weight: 0.2
+  submetapath_feature_weight: 0.5
   sampling_limit: 8
 
 SeHGNNver2_ACM_tuned_concat_alpha_auto: &SeHGNNver2_ACM_tuned_concat_alpha_auto
