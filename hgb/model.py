@@ -114,11 +114,9 @@ class PreProcessing(nn.Module):
                     #------（Neighbor Aggregation）----
                     concatenated_features = [concatenate_features(data.ntype_features,metapath_key,homo_to_hetero_index_dict,indices) for indices in indices_list]
                     concatenated_features = torch.stack(concatenated_features)         
-                    if self.cfg["neighbor_encoder"] == "mean":
-                        calc_metapath_insntance_feature_per_metapath = torch.mean(concatenated_features,dim=0)
-                        neighbor_aggr_feature_per_metapath[node_id][metapath_key] = calc_metapath_insntance_feature_per_metapath
-                    else: # neighbor_encoder == "sum"
-                        neighbor_aggr_feature_per_metapath[node_id][metapath_key] = concatenated_features
+                    #mean
+                    calc_metapath_insntance_feature_per_metapath = torch.mean(concatenated_features,dim=0)
+                    neighbor_aggr_feature_per_metapath[node_id][metapath_key] = calc_metapath_insntance_feature_per_metapath
 
             
             # # 結果を表示（neighbor_aggr_feature_per_metapath）
